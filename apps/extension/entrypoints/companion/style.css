@@ -1,5 +1,8 @@
 @import "../../src/ui/tokens.css";
 
+/* Laid out as Apple's iOS and iPadOS 27 kit lays out a welcome screen: app icon, bold title,
+   grouped lists (radius 26, rows of 68) under section titles, one full-width capsule button. */
+
 * {
   box-sizing: border-box;
 }
@@ -8,115 +11,166 @@ body {
   margin: 0;
   min-height: 100vh;
   display: grid;
-  place-items: center;
-  padding: 32px 16px;
-  background: var(--bg);
-  color: var(--text);
-  font: 14px / 1.5 var(--font);
+  justify-items: center;
+  align-content: start;
+  padding: 64px 20px 48px;
+  background: var(--grouped);
+  color: var(--label);
+  font: 400 17px / 22px var(--font);
+  letter-spacing: -0.43px;
+  -webkit-font-smoothing: antialiased;
 }
 
 main {
-  width: min(460px, 100%);
-  padding: 32px;
-  border-radius: 16px;
-  background: var(--surface);
-  box-shadow:
-    0 0 0 1px var(--separator),
-    0 12px 40px rgb(0 0 0 / 8%);
+  display: grid;
+  justify-items: center;
+  width: min(440px, 100%);
   text-align: center;
 }
 
 .app-icon {
-  width: 72px;
-  height: 72px;
+  width: 88px;
+  height: 88px;
+  border-radius: 20px;
 }
 
 h1 {
-  margin: 12px 0 4px;
-  font-size: 22px;
+  margin: 20px 0 8px;
+  font-size: 34px;
+  line-height: 41px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
 }
 
 .lead {
-  margin: 0 0 22px;
-  color: var(--text-secondary);
+  margin: 0;
+  color: var(--label-2);
 }
 
-.features {
-  display: grid;
-  gap: 14px;
-  margin: 0 0 22px;
+/* section titles, as the kit's: 17 semibold, secondary, 39 tall */
+h2 {
+  display: flex;
+  align-items: flex-end;
+  justify-self: stretch;
+  height: 39px;
+  margin: 12px 0 0;
+  padding: 0 16px 9px;
+  color: var(--label-2);
+  font-size: 17px;
+  line-height: 22px;
+  font-weight: 590;
+  text-align: left;
+}
+
+.list {
+  justify-self: stretch;
+  margin: 0;
   padding: 0;
+  overflow: hidden;
+  border-radius: 26px;
+  background: var(--cell);
   list-style: none;
   text-align: left;
 }
 
-.features li {
+.row {
   display: flex;
-  gap: 12px;
-  align-items: flex-start;
+  align-items: center;
+  gap: 8px;
+  min-height: 68px;
+  padding: 0 16px;
 }
 
-.features svg {
+.row .body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  align-self: stretch;
+  min-width: 0;
+  padding: 10px 0;
+}
+
+.row + .row .body {
+  border-top: 1px solid var(--cell-separator);
+}
+
+.row strong {
+  font-weight: 400;
+}
+
+.row .body span {
+  color: var(--label-2);
+  font-size: 15px;
+  line-height: 20px;
+  letter-spacing: -0.23px;
+}
+
+.tile {
+  display: grid;
   flex: none;
-  width: 22px;
-  height: 22px;
-  margin-top: 2px;
-  color: var(--accent);
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 11px;
+  color: #ffffff;
 }
 
-.features p {
-  margin: 0;
-  color: var(--text-secondary);
+.tile svg {
+  width: 26px;
+  height: 26px;
 }
 
-.asks {
-  margin: 0 0 22px;
-  padding: 14px 16px;
-  border-radius: 10px;
-  background: var(--bg);
-  text-align: left;
+.tile.accent {
+  background: var(--accent);
 }
 
-.asks h2 {
-  margin: 0 0 6px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+.tile.blue {
+  background: #0088ff;
 }
 
-.asks ul {
-  margin: 0;
-  padding-left: 18px;
-  color: var(--text-secondary);
-  font-size: 13px;
+.tile.red {
+  background: #ff383c;
+}
+
+.tile.gray {
+  background: var(--tile);
 }
 
 .actions {
-  display: flex;
-  gap: 10px;
-  justify-content: center;
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  justify-self: stretch;
+  margin-top: 32px;
 }
 
 .button {
-  padding: 8px 16px;
-  border-radius: 8px;
-  background: var(--bg);
-  color: var(--text);
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 50px;
+  border-radius: 25px;
+  background: var(--fill);
+  color: var(--accent);
+  font-weight: 590;
   text-decoration: none;
-  font-weight: 500;
-  box-shadow: inset 0 0 0 1px var(--separator);
 }
 
 .button.primary {
   background: var(--accent);
   color: var(--accent-text);
-  box-shadow: none;
+}
+
+.text-link {
+  color: var(--accent);
+  text-decoration: none;
 }
 
 .fine {
-  margin: 18px 0 0;
-  color: var(--text-secondary);
-  font-size: 12px;
+  margin: 28px 0 0;
+  color: var(--label-2);
+  font-size: 13px;
+  line-height: 18px;
+  letter-spacing: -0.08px;
 }

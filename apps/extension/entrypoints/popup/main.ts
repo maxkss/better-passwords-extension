@@ -7,7 +7,7 @@ import { applySystemAccent } from "@/src/ui/accent.ts";
 import { bindCodeInput } from "@/src/ui/code-input.ts";
 import { companionPitch } from "@/src/ui/companion-pitch.ts";
 import { h } from "@/src/ui/h.ts";
-import { CHECK, icon, OPEN, TIMER } from "@/src/ui/icons.ts";
+import { BACK, CHECK, GEAR, icon, LOCK, TIMER, WARNING } from "@/src/ui/icons.ts";
 import { reportProblem } from "@/src/ui/report.ts";
 import { setupFlow } from "@/src/ui/setup.ts";
 
@@ -19,18 +19,90 @@ let computer = "Mac";
 /** What's shown while a verification code is fetched: macOS asks for Touch ID, Windows nothing. */
 let fetchingCode = "Confirm with Touch ID…";
 
-function show(...children: (Node | false | null | undefined)[]) {
+type Child = Node | false | null | undefined;
+
+function show(...children: Child[]) {
   app.replaceChildren(...children.filter((c): c is Node => Boolean(c)));
 }
 
 function errorLine(message: string | undefined) {
-  return message ? h("p", { class: "error", textContent: message }) : null;
+  return message ? h("p", { class: "foot error", textContent: message }) : null;
+}
+
+// --- building blocks, as Apple's iOS and iPadOS kit draws them ------------------------------------
+
+/** A round toolbar button: a symbol, or a short text. */
+function tool(label: string, glyph: string | { text: string }, onClick: () => void): HTMLButtonElement {
+  const button = h(
+    "button",
+    { class: typeof glyph === "string" ? "tool" : "tool text", type: "button", title: label },
+    typeof glyph === "string" ? icon(glyph) : glyph.text,
+  );
+  button.setAttribute("aria-label", label);
+  button.addEventListener("click", onClick);
+  return button;
+}
+
+/** The toolbar: a button each side, the title centred between them. */
+function toolbar(title: string, leading: Node | null, trailing: Node | null) {
+  return h(
+    "header",
+    { class: "toolbar" },
+    leading ?? h("span"),
+    h("h1", { textContent: title }),
+    trailing ?? h("span"),
+  );
+}
+
+function sectionTitle(text: string) {
+  return h("h2", { class: "hdr", textContent: text });
+}
+
+interface RowOptions {
+  /** A button for a row that is itself the action, a label for a switch, else a plain row. */
+  as?: "button" | "label" | "div";
+  tall?: boolean;
+  lead?: Node | null;
+  title: string | Node;
+  subtitle?: string;
+  trailing?: Node | null;
+  className?: string;
+}
+
+/** A list row: an optional image, a title (and subtitle) and an optional trailing control. */
+function row({ as = "div", tall, lead, title, subtitle, trailing, className }: RowOptions): HTMLElement {
+  const text = h(
+    "span",
+    { class: "text" },
+    typeof title === "string" ? h("span", { class: "title", textContent: title }) : title,
+    subtitle ? h("span", { class: "subtitle", textContent: subtitle }) : null,
+  );
+  const classes = ["row", tall ? "tall" : "", className ?? ""].filter(Boolean).join(" ");
+  const el = h(as, { class: classes }, lead ?? null, h("span", { class: "body" }, text, trailing ?? null));
+  if (el instanceof HTMLButtonElement) el.type = "button";
+  return el;
+}
+
+function tile(content: string | SVGSVGElement, accent = false) {
+  return h("span", { class: accent ? "tile accent" : "tile", attrs: { "aria-hidden": "true" } }, content);
+}
+
+function linkButton(text: string, onClick: () => void): HTMLButtonElement {
+  const button = h("button", { class: "link", type: "button", textContent: text });
+  button.addEventListener("click", onClick);
+  return button;
+}
+
+function list(...rows: Child[]) {
+  return h("div", { class: "list" }, ...rows.filter((r): r is Node => Boolean(r)));
 }
 
 async function activeTabId(): Promise<number | undefined> {
   const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
   return tab?.id;
 }
+
+// --- the flow ------------------------------------------------------------------------------------
 
 async function refresh(error?: string) {
   let status: Status;
@@ -85,8 +157,20 @@ function popupSettled(): Promise<void> {
   });
 }
 
+/** A screen with one message: a symbol in a circle, a title, a line under it, then the rest. */
+function prompt(symbol: string, title: string, lead: string, ...rest: Child[]) {
+  return h(
+    "section",
+    { class: "prompt" },
+    h("div", { class: "symbol" }, icon(symbol)),
+    h("h1", { textContent: title }),
+    h("p", { textContent: lead }),
+    ...rest.filter((c): c is Node => Boolean(c)),
+  );
+}
+
 async function unlockWithTouchId(status: Status) {
-  show(h("h1", { textContent: "Confirm with Touch ID" }), h("p", {}, "The code your Mac shows is entered for you."));
+  show(h("main", {}, prompt(LOCK, "Confirm with Touch ID", "The code your Mac shows is entered for you.")));
   try {
     await send({ type: "unlock-with-touch-id" });
     await refresh();
@@ -101,18 +185,19 @@ let settingUp = false;
 
 async function showSetup(status: Status) {
   settingUp = true;
-  show(await setupFlow(status, { next: { label: "Continue", run: () => void refresh() } }));
+  show(
+    h(
+      "main",
+      { class: "setup-main" },
+      await setupFlow(status, { next: { label: "Continue", run: () => void refresh() } }),
+    ),
+  );
 }
 
 function showRetry(error: string) {
-  const retry = h("button", { class: "primary", textContent: "Try again" });
+  const retry = h("button", { class: "capsule", type: "button", textContent: "Try again" });
   retry.addEventListener("click", () => void refresh());
-  show(
-    h("h1", { textContent: DISPLAY_NAME }),
-    errorLine(error),
-    h("div", { class: "actions" }, retry),
-    reportProblem(),
-  );
+  show(h("main", {}, prompt(WARNING, DISPLAY_NAME, error, h("div", { class: "actions" }, retry)), reportProblem()));
 }
 
 /** Shows the box for the code and returns it. */
@@ -122,9 +207,14 @@ function showCodeEntry(status: Status, error?: string): HTMLInputElement {
     inputMode: "numeric",
     autocomplete: "one-time-code",
     ariaLabel: "Verification code",
+    placeholder: "000000",
     autofocus: true,
   });
-  const newCode = h("button", { class: "link", textContent: "Show code again" });
+  const newCode = linkButton("Show code again", async () => {
+    await send({ type: "request-code", fresh: true }).catch((e) => showCodeEntry(status, messageOf(e)));
+    input.value = "";
+    input.focus();
+  });
 
   const submit = async (code: string) => {
     input.disabled = true;
@@ -138,37 +228,34 @@ function showCodeEntry(status: Status, error?: string): HTMLInputElement {
       showCodeEntry(status, messageOf(e));
     }
   };
-
   bindCodeInput(input, (code) => void submit(code));
-  newCode.addEventListener("click", async () => {
-    await send({ type: "request-code", fresh: true }).catch((e) => showCodeEntry(status, messageOf(e)));
-    input.value = "";
-    input.focus();
-  });
 
   let touchId: HTMLButtonElement | null = null;
   if (status.touchId) {
-    touchId = h("button", { class: "link", textContent: "Enter it for me" });
+    touchId = h("button", { class: "capsule", type: "button", textContent: "Enter It With Touch ID" });
     touchId.addEventListener("click", () => void unlockWithTouchId(status));
   }
   const companionHint =
     status.companion === "needs-setup"
-      ? h("p", { class: "hint" }, "To skip typing the code, finish setting up the companion app.")
+      ? h("p", { class: "foot" }, "To skip typing the code, finish setting up the companion app.")
       : null;
   const report = reportProblem();
 
   show(
-    h("h1", { textContent: `Enter the code shown on your ${computer}` }),
     h(
-      "p",
+      "main",
       {},
-      `Your ${computer} is showing a 6-digit verification code. You only need to do this once per browser session.`,
+      prompt(
+        LOCK,
+        `Enter the code shown on your ${computer}`,
+        `Your ${computer} is showing a 6-digit code. You only do this once per browser session.`,
+        input,
+        error ? h("p", { class: "error", textContent: error }) : null,
+        h("div", { class: "actions" }, newCode, touchId),
+        companionHint,
+      ),
+      report,
     ),
-    input,
-    errorLine(error),
-    h("div", { class: "actions" }, newCode, touchId),
-    companionHint,
-    report,
   );
   void companionPitch(() => {
     void send({ type: "open-companion-page" }).catch(() => {});
@@ -186,6 +273,8 @@ function showCodeEntry(status: Status, error?: string): HTMLInputElement {
   return input;
 }
 
+// --- unlocked: the site's passwords and codes ----------------------------------------------------
+
 async function showLogins(status: Status, error?: string) {
   const tabId = await activeTabId();
   let result: LoginsResult = { logins: [] };
@@ -195,42 +284,52 @@ async function showLogins(status: Status, error?: string) {
     error ??= messageOf(e);
   }
 
-  let body: Node;
+  let passwords: Node;
   if (!result.hostname) {
-    body = h("p", {}, "Open a website to see its saved passwords.");
+    passwords = list(h("p", { class: "empty", textContent: "Open a website to see its saved passwords." }));
   } else if (result.logins.length === 0) {
-    body = h("p", {}, `No saved passwords for ${result.hostname}.`);
+    passwords = list(h("p", { class: "empty", textContent: `No saved passwords for ${result.hostname}.` }));
   } else {
-    body = loginList(tabId as number, result.logins, result.chosen);
+    passwords = loginList(tabId as number, result.hostname, result.logins, result.chosen);
   }
 
-  const openApp = h("button", { class: "link with-icon" }, icon(OPEN), "Open Passwords App");
-  openApp.addEventListener("click", async () => {
+  const openApp = linkButton("Passwords app", async () => {
     await send({ type: "open-passwords-app", ...(tabId === undefined ? {} : { tabId }) }).catch(() => {});
     window.close();
   });
 
   const allSet = settingUp
-    ? h(
-        "p",
-        { class: "card padded all-set" },
-        icon(CHECK),
-        "You're all set. Click a login field on any website to fill a password.",
+    ? list(
+        row({
+          tall: true,
+          lead: tile(icon(CHECK), true),
+          title: "You're all set.",
+          subtitle: "Click a login field on any website to fill a password.",
+        }),
       )
     : null;
   settingUp = false;
 
+  const lock = tool("Lock", LOCK, async () => {
+    await send({ type: "lock" });
+    window.close();
+  });
+  const settings = tool("Settings", GEAR, () => void showSettings(status));
+
   show(
-    h("h1", { textContent: result.hostname ?? DISPLAY_NAME }),
-    allSet,
-    extensionUpdate(status.extensionUpdate),
-    tabId === undefined || !result.hostname ? null : await oneTimeCodes(tabId),
-    body,
-    await unconfirmedPasswords(tabId),
-    errorLine(error),
-    h("div", { class: "actions" }, openApp),
-    await footer(status),
-    reportProblem(),
+    toolbar(result.hostname ? "Sign In" : DISPLAY_NAME, lock, settings),
+    h(
+      "main",
+      {},
+      allSet,
+      extensionUpdate(status.extensionUpdate),
+      sectionTitle("Passwords"),
+      passwords,
+      h("p", { class: "foot" }, "You can also look up passwords in the ", openApp, "."),
+      tabId === undefined || !result.hostname ? null : await oneTimeCodes(tabId),
+      await unconfirmedPasswords(tabId),
+      errorLine(error),
+    ),
   );
   app.querySelector<HTMLInputElement>(".search")?.focus();
 }
@@ -238,17 +337,17 @@ async function showLogins(status: Status, error?: string) {
 /** A downloaded version waits for the session to end; installing it now ends it. */
 function extensionUpdate(version: string | undefined) {
   if (!version) return null;
-  const install = h("button", { class: "primary", textContent: "Update" });
-  install.addEventListener("click", () => {
+  const install = linkButton("Update", () => {
     // the extension restarts before it can answer
     void send({ type: "install-update" }).catch(() => {});
     window.close();
   });
   return h(
     "section",
-    { class: "card padded" },
-    h("div", { class: "actions" }, h("span", { textContent: `Version ${version} is ready` }), install),
-    h("p", { class: "hint" }, "Updating locks Better Passwords, so you'll enter the code again."),
+    {},
+    sectionTitle("Update"),
+    list(row({ tall: true, title: `Version ${version} is ready`, trailing: install })),
+    h("p", { class: "foot" }, "Updating locks Better Passwords, so you'll enter the code again."),
   );
 }
 
@@ -258,17 +357,14 @@ const COLLAPSED = 3;
 const SEARCH_AFTER = 10;
 
 /** `chosen`: the login picked on the sign-in's previous step (listed first), shown alone at first. */
-function loginList(tabId: number, logins: LoginsResult["logins"], chosen?: string) {
+function loginList(tabId: number, hostname: string, logins: LoginsResult["logins"], chosen?: string) {
+  const initial = (hostname.replace(/^www\./, "")[0] ?? "?").toUpperCase();
   const items = logins.map(({ username }) => {
     const name = username || "(no username)";
-    const button = h(
-      "button",
-      { class: "login", title: `Fill ${username}` },
-      h("span", { class: "avatar", textContent: (username[0] ?? "?").toUpperCase() }),
-      h("span", { class: "name", textContent: name }),
-    );
+    const button = row({ as: "button", tall: true, lead: tile(initial), title: name, subtitle: hostname });
+    button.title = `Fill ${username}`;
     button.addEventListener("click", () => void fill(tabId, username));
-    return { name: name.toLowerCase(), username, li: h("li", {}, button) };
+    return { name: name.toLowerCase(), username, el: button };
   });
 
   const collapsed = chosen === undefined ? COLLAPSED : 1;
@@ -276,13 +372,13 @@ function loginList(tabId: number, logins: LoginsResult["logins"], chosen?: strin
   // out the chosen one
   let expanded = chosen === undefined ? items.length <= COLLAPSED + 1 : items.length <= 1;
   const others = items.length - collapsed;
-  const more = h("button", {
-    class: "login more",
-    textContent:
-      chosen === undefined ? `Show ${others} more` : others === 1 ? "1 other account" : `${others} other accounts`,
+  const more = row({
+    as: "button",
+    className: "action",
+    title: chosen === undefined ? `Show ${others} more` : others === 1 ? "1 other account" : `${others} other accounts`,
   });
-  const moreItem = h("li", {}, more);
-  const noMatches = h("li", { class: "hint no-matches", textContent: "No matching accounts." });
+  const noMatches = row({ title: "No matching accounts.", className: "action" });
+  noMatches.classList.add("muted");
   const search =
     items.length > SEARCH_AFTER
       ? h("input", { class: "search", type: "search", placeholder: `Search ${items.length} accounts` })
@@ -294,14 +390,14 @@ function loginList(tabId: number, logins: LoginsResult["logins"], chosen?: strin
     const query = search?.value.trim().toLowerCase() ?? "";
     matches = items.filter((item) => item.name.includes(query));
     const shown = new Set(query || expanded ? matches : matches.slice(0, collapsed));
-    for (const item of items) item.li.hidden = !shown.has(item);
-    moreItem.hidden = Boolean(query) || expanded;
+    for (const item of items) item.el.hidden = !shown.has(item);
+    more.hidden = Boolean(query) || expanded;
     noMatches.hidden = matches.length > 0;
   };
   more.addEventListener("click", () => {
     expanded = true;
     update();
-    items[collapsed]?.li.querySelector("button")?.focus();
+    items[collapsed]?.el.focus();
   });
   search?.addEventListener("input", update);
   search?.addEventListener("keydown", (event) => {
@@ -309,12 +405,7 @@ function loginList(tabId: number, logins: LoginsResult["logins"], chosen?: strin
   });
   update();
 
-  return h(
-    "div",
-    { class: "card" },
-    search,
-    h("ul", { class: "logins" }, ...items.map((item) => item.li), moreItem, noMatches),
-  );
+  return h("div", {}, search, list(...items.map((item) => item.el), more, noMatches));
 }
 
 /** How long a code fetched for Copy waits for a second click, when the first one couldn't copy it. */
@@ -332,43 +423,16 @@ async function oneTimeCodes(tabId: number) {
     return null;
   }
   if (result.codes.length === 0) return null;
-  const note = h("p", { class: "hint", hidden: true });
+  const note = h("p", { class: "foot", hidden: true });
   const say = (text: string, isError = false) => {
     note.textContent = text;
-    note.className = isError ? "hint error" : "hint";
+    note.className = isError ? "foot error" : "foot";
     note.hidden = !text;
   };
   const items = result.codes.map((code) => {
     const account = code.username ? `${code.username} · ${code.domain}` : code.domain;
-    const fillButton = h(
-      "button",
-      { class: "login", title: "Fill this code into the page" },
-      h("span", { class: "avatar" }, icon(TIMER)),
-      h(
-        "span",
-        { class: "name" },
-        h("span", { textContent: "Verification Code" }),
-        h("span", { class: "detail", textContent: account }),
-      ),
-    );
-    fillButton.addEventListener("click", async () => {
-      say(fetchingCode);
-      try {
-        const { result: filled } = await send({ type: "fill-one-time-code", tabId, id: code.id });
-        if (filled === "filled") return window.close();
-        say(
-          filled === "no-fields"
-            ? "No verification code field on this page. Copy the code instead."
-            : "The page changed, try again.",
-          true,
-        );
-      } catch (e) {
-        if ((e as { code?: string }).code === "superseded") return;
-        say(messageOf(e), true);
-      }
-    });
 
-    const copy = h("button", { class: "secondary", textContent: "Copy" });
+    const copy = linkButton("Copy", () => {});
     // fetched, but the browser wouldn't let us copy it any more (Touch ID took a while)
     let waiting: { digits: string; timer: ReturnType<typeof setTimeout> } | undefined;
     const forget = () => {
@@ -381,7 +445,9 @@ async function oneTimeCodes(tabId: number) {
       copy.textContent = "Copied";
       say("");
     };
-    copy.addEventListener("click", async () => {
+    copy.addEventListener("click", async (event) => {
+      // Copy sits inside the row, which fills: don't let the click fill too
+      event.stopPropagation();
       if (waiting) return write(waiting.digits).catch((e) => say(messageOf(e), true));
       copy.disabled = true;
       say(fetchingCode);
@@ -404,15 +470,38 @@ async function oneTimeCodes(tabId: number) {
         copy.disabled = false;
       }
     });
-    return h("li", { class: "code-item" }, fillButton, copy);
+
+    const fillRow = row({
+      as: "div",
+      tall: true,
+      lead: tile(icon(TIMER), true),
+      title: "Verification Code",
+      subtitle: account,
+      trailing: copy,
+    });
+    const fillButton = h("button", { class: "row-fill", type: "button", title: "Fill this code into the page" });
+    fillButton.setAttribute("aria-label", `Fill verification code for ${account}`);
+    fillRow.prepend(fillButton);
+    fillRow.classList.add("fillable");
+    fillButton.addEventListener("click", async () => {
+      say(fetchingCode);
+      try {
+        const { result: filled } = await send({ type: "fill-one-time-code", tabId, id: code.id });
+        if (filled === "filled") return window.close();
+        say(
+          filled === "no-fields"
+            ? "No verification code field on this page. Copy the code instead."
+            : "The page changed, try again.",
+          true,
+        );
+      } catch (e) {
+        if ((e as { code?: string }).code === "superseded") return;
+        say(messageOf(e), true);
+      }
+    });
+    return fillRow;
   });
-  return h(
-    "section",
-    { class: "recent codes" },
-    h("h2", { textContent: "Verification Codes" }),
-    h("ul", { class: "card" }, ...items),
-    note,
-  );
+  return h("section", { class: "codes" }, sectionTitle("Verification Codes"), list(...items), note);
 }
 
 /**
@@ -423,30 +512,27 @@ async function unconfirmedPasswords(tabId: number | undefined) {
   if (tabId === undefined) return null;
   const entries = await send({ type: "unconfirmed-passwords", tabId }).catch(() => []);
   if (entries.length === 0) return null;
-  const note = h("p", { class: "hint" }, "New passwords from this session, in case one wasn't saved.");
+  const note = h("p", { class: "foot" }, "New passwords from this session, in case one wasn't saved.");
   return h(
     "section",
-    { class: "recent" },
-    h("h2", { textContent: "Recent passwords" }),
-    h(
-      "ul",
-      { class: "card" },
+    {},
+    sectionTitle("Recent Passwords"),
+    list(
       ...entries.map(({ id, username }) => {
-        const save = h("button", { class: "secondary", textContent: "Save" });
-        save.addEventListener("click", async () => {
+        const save = linkButton("Save", async () => {
           save.disabled = true;
           try {
             await send({ type: "save-unconfirmed-password", tabId, id });
-            note.className = "hint";
+            note.className = "foot";
             note.textContent = "If Passwords already has it, macOS won't ask.";
           } catch (e) {
-            note.className = "hint error";
+            note.className = "foot error";
             note.textContent = messageOf(e);
           } finally {
             save.disabled = false;
           }
         });
-        return h("li", { class: "actions" }, h("span", { textContent: username || "(no username)" }), save);
+        return row({ title: username || "(no username)", trailing: save });
       }),
     ),
     note,
@@ -465,12 +551,25 @@ async function fill(tabId: number, username: string) {
   }
 }
 
+// --- settings ------------------------------------------------------------------------------------
+
 type Option = (key: keyof Settings, label: string, detail?: string, disabled?: boolean) => HTMLElement;
 
-async function footer(status: Status) {
-  const settings: Settings = await send({ type: "get-settings" });
+async function showSettings(status: Status) {
+  let settings: Settings;
+  try {
+    settings = await send({ type: "get-settings" });
+  } catch (e) {
+    return refresh(messageOf(e));
+  }
   const option: Option = (key, label, detail, disabled = false) => {
-    const toggle = h("input", { type: "checkbox", checked: !disabled && settings[key], disabled });
+    const toggle = h("input", {
+      class: "switch",
+      type: "checkbox",
+      checked: !disabled && settings[key],
+      disabled,
+      attrs: { role: "switch" },
+    });
     toggle.addEventListener("change", async () => {
       try {
         if (key === "hideMyEmail" && toggle.checked && !(await requestHideMyEmailConsent())) {
@@ -483,85 +582,85 @@ async function footer(status: Status) {
         await refresh(messageOf(error));
       }
     });
-    return h(
-      "label",
-      { class: "toggle" },
-      toggle,
-      h("span", { class: "text" }, label, detail ? h("span", { class: "detail", textContent: detail }) : null),
-    );
+    return row({
+      as: "label",
+      tall: Boolean(detail),
+      title: label,
+      ...(detail ? { subtitle: detail } : {}),
+      trailing: toggle,
+    });
   };
-  const lock = h("button", { class: "secondary", textContent: "Lock" });
-  lock.addEventListener("click", async () => {
-    await send({ type: "lock" });
-    window.close();
-  });
-  return h(
-    "div",
-    { class: "settings" },
-    h("h2", { textContent: "Suggestions" }),
-    option("inlineMenu", "When signing in", "saved passwords"),
-    option("oneTimeCodes", "Verification codes", "when a site asks for one"),
-    option("generatePasswords", "When signing up", "strong passwords and emails"),
-    option("hideMyEmail", "Hide My Email", "iCloud+ addresses, labeled with the site's name"),
-    // the companion app is Mac only; elsewhere there's nothing to offer
-    ...(status.companion === "unavailable" ? [] : [h("hr"), macAppSection(status, option)]),
-    h("hr"),
-    // Firefox's idle API never reports "locked", so the option would do nothing there
+
+  show(
+    toolbar(
+      "Settings",
+      tool("Back", BACK, () => void refresh()),
+      null,
+    ),
     h(
-      "div",
-      { class: "actions" },
-      import.meta.env.FIREFOX ? h("span") : option("lockOnScreenLock", `Lock when my ${computer} locks`),
-      lock,
+      "main",
+      {},
+      sectionTitle("Suggest Automatically"),
+      list(
+        option("inlineMenu", "When signing in", "Saved passwords"),
+        option("oneTimeCodes", "Verification codes", "When a site asks for one"),
+        option("generatePasswords", "When signing up", "Strong passwords and emails"),
+        option("hideMyEmail", "Hide My Email", "iCloud+ addresses for each site"),
+      ),
+      // Firefox's idle API never reports "locked", so the option would do nothing there
+      import.meta.env.FIREFOX
+        ? null
+        : h(
+            "section",
+            {},
+            sectionTitle("Security"),
+            list(option("lockOnScreenLock", `Lock when my ${computer} locks`)),
+          ),
+      // the companion app is Mac only; elsewhere there's nothing to offer
+      status.companion === "unavailable" ? null : macAppSection(status, option),
+      reportProblem(),
     ),
   );
 }
 
 /**
- * What the companion app adds. Without it (or before its setup is done) the options are shown, greyed
- * out, next to one button that gets it, so they're discoverable but never a switch that does nothing.
+ * What the companion app adds. Without it (or before its setup is done), one row that gets it, with
+ * its options shown greyed out, so they're discoverable but never a switch that does nothing.
  */
 function macAppSection(status: Status, option: Option) {
   const ready = status.companion === "ready";
-  const openApp = (label: string) => {
-    const button = h("button", { class: "link", textContent: label });
-    button.addEventListener("click", () => void openCompanion("open-companion-app"));
-    return button;
-  };
-  const options = h(
-    "div",
-    { class: "options" },
-    option("touchId", "Enter the 6-digit code for me", "after Touch ID", !ready),
-    option("suggestEmails", "Suggest my emails", "from your contact card", !ready),
-  );
+  const appIcon = h("img", { class: "tile", src: "/icon/128.png", alt: "" });
+  const options = [
+    option("touchId", "Enter the 6-digit code for me", "After Touch ID", !ready),
+    option("suggestEmails", "Suggest my emails", "From your contact card", !ready),
+  ];
+
+  let action: HTMLButtonElement;
+  let title = "Companion App";
+  let subtitle = "Open it to change what it can do";
   if (ready) {
     // an app that updates itself offers the update once opened; an older one is downloaded again
     const update = status.companionUpdate;
-    let action = openApp("Open Companion App…");
-    if (update?.how === "app") action = openApp(`Update to ${update.version}…`);
-    if (update?.how === "download") {
-      action = h("button", { class: "link", textContent: "Update Available…" });
-      action.addEventListener("click", () => void openCompanion("open-companion-page"));
-    }
-    return h(
-      "section",
-      { class: "mac-app" },
-      h("div", { class: "actions" }, h("h2", { textContent: "Companion app" }), action),
-      options,
+    action = linkButton("Open", () => void openCompanion("open-companion-app"));
+    if (update?.how === "app")
+      action = linkButton(`Update to ${update.version}`, () => void openCompanion("open-companion-app"));
+    if (update?.how === "download") action = linkButton("Update", () => void openCompanion("open-companion-page"));
+  } else {
+    const installed = status.companion === "needs-setup";
+    title = "Skip the 6-digit code";
+    subtitle = installed ? "Finish setting up the companion app" : "Touch ID enters it for you";
+    // short, as a list row's trailing button is; its full name for assistive tech
+    action = linkButton(
+      installed ? "Set Up" : "Get",
+      () => void openCompanion(installed ? "open-companion-app" : "open-companion-page"),
     );
+    action.setAttribute("aria-label", installed ? "Finish Setting Up" : "Get Companion App");
   }
-  const installed = status.companion === "needs-setup";
-  const cta = h(
-    "button",
-    { class: "cta" },
-    h("img", { src: "/icon/32.png", alt: "" }),
-    installed ? "Finish Setting Up" : "Get Companion App",
-  );
-  cta.addEventListener("click", () => void openCompanion(installed ? "open-companion-app" : "open-companion-page"));
   return h(
     "section",
-    { class: "mac-app unavailable" },
-    h("h2", { textContent: "Companion app" }),
-    h("div", { class: "offer" }, options, cta),
+    { class: ready ? "mac-app" : "mac-app unavailable" },
+    sectionTitle("Companion App"),
+    list(row({ tall: true, lead: appIcon, title, subtitle, trailing: action }), ...options),
   );
 }
 

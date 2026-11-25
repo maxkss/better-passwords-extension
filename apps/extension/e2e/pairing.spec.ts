@@ -12,7 +12,8 @@ test("pairs with the helper over native messaging and keeps the session", async 
   // unlocked: the popup itself is not a website, so it explains what to do
   await expect(popup.getByText("Open a website to see its saved passwords.")).toBeVisible();
 
-  // without the Mac app, Touch ID is offered as getting it
+  // without the Mac app, Touch ID is offered (in Settings) as getting it
+  await popup.getByRole("button", { name: "Settings" }).click();
   await expect(popup.getByRole("button", { name: "Get Companion App" })).toBeVisible();
 
   // reopening must reuse the session instead of asking for a new code
@@ -64,7 +65,7 @@ test("the popup opens the Passwords app", async ({ context, popupUrl, passwordsA
   const popup = await context.newPage();
   await popup.goto(popupUrl);
   await popup.getByLabel("Verification code").fill(PAIRING_CODE);
-  await popup.getByRole("button", { name: "Open Passwords App" }).click();
+  await popup.getByRole("button", { name: "Passwords app" }).click();
   // the popup's own tab is not a website, so no search is passed
   await expect.poll(passwordsAppLaunches).toEqual([""]);
 });
@@ -98,5 +99,7 @@ test("problems can be reported while unlocking and once unlocked", async ({ cont
 
   await popup.getByLabel("Verification code").fill(PAIRING_CODE);
   await expect(popup.getByText("Open a website to see its saved passwords.")).toBeVisible();
+  // once unlocked, the way to report a problem is in Settings
+  await popup.getByRole("button", { name: "Settings" }).click();
   await expect(popup.getByRole("link", { name: "Email the developer" })).toHaveAttribute("href", /^mailto:/);
 });
