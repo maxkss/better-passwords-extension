@@ -46,7 +46,7 @@ test("moving to the next field opens a fresh menu that still fills", async ({ co
   await page.keyboard.press("Tab");
   await expect.poll(() => page.frames().some((f) => f.url().includes("/menu.html#") && f !== first)).toBe(true);
   menu = await menuFrame(page);
-  await expect(menu.getByText("Open Passwords App")).toBeVisible();
+  await expect(menu.getByText("Manage Passwords…")).toBeVisible();
   const height = await page.locator("app-autofill-menu").evaluate((el) => el.getBoundingClientRect().height);
   expect(height).toBeGreaterThan(70);
 
@@ -97,7 +97,7 @@ test("opens the Passwords app for the current site", async ({ context, siteUrl, 
   await choose(menu, "Unlock to fill passwords");
   await menu.getByLabel("Verification code").fill(PAIRING_CODE);
 
-  await choose(menu, "Open Passwords App");
+  await choose(menu, "Manage Passwords…");
   await expect.poll(passwordsAppLaunches).toEqual([siteUrl]);
   await expect.poll(() => page.locator("app-autofill-menu").count()).toBe(0);
 });
@@ -323,7 +323,7 @@ test("without room under the field, opens above it, listed bottom-up and entered
   await choose(menu, "Unlock to fill passwords");
   await menu.getByLabel("Verification code").fill(PAIRING_CODE);
   const login = menu.getByRole("option", { name: /e2e-user/ });
-  const openApp = menu.getByRole("option", { name: /Open Passwords App/ });
+  const openApp = menu.getByRole("option", { name: /Manage Passwords…/ });
   await expect(login).toBeVisible();
   const [field, host] = await Promise.all([
     page.locator("#pass").boundingBox(),

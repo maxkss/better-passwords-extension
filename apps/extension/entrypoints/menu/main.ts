@@ -9,20 +9,7 @@ import { applySystemAccent } from "@/src/ui/accent.ts";
 import { bindCodeInput } from "@/src/ui/code-input.ts";
 import { companionPitch } from "@/src/ui/companion-pitch.ts";
 import { h } from "@/src/ui/h.ts";
-import {
-  CANCEL,
-  CHECK,
-  ENVELOPE,
-  EYE,
-  icon,
-  KEY,
-  LOCK,
-  OPEN,
-  PERSON,
-  REFRESH,
-  TIMER,
-  WARNING,
-} from "@/src/ui/icons.ts";
+import { CANCEL, CHECK, ENVELOPE, EYE, icon, KEY, LOCK, PERSON, REFRESH, TIMER, WARNING } from "@/src/ui/icons.ts";
 
 // The inline menu, shown in an iframe under a login field. It is an extension page, so the web
 // page can't read the usernames shown here or listen to keys typed into the code field.
@@ -92,10 +79,19 @@ function reportSize() {
     return;
   }
   const borders = panel.offsetHeight - panel.clientHeight;
+  // like Safari's, as wide as what it lists (the host keeps that within bounds): measured unwrapped
+  panel.style.width = "max-content";
+  const width = Math.ceil(panel.getBoundingClientRect().width);
+  panel.style.width = "";
   // scrollHeight is rounded, the content may be a fraction taller: one spare pixel keeps a list
   // that fits from scrolling by that fraction
-  void send({ type: "menu-resize", nonce, height: panel.scrollHeight + borders + 1 }).catch(() => {});
+  void send({ type: "menu-resize", nonce, height: panel.scrollHeight + borders + 1, width }).catch(() => {});
 }
+
+// the host settled on another width: text that wraps (a message) may need another height
+window.addEventListener("resize", () => {
+  if (panel.childElementCount > 0) reportSize();
+});
 
 function close() {
   void send({ type: "menu-close", nonce }).catch(() => {});
@@ -686,11 +682,24 @@ async function unlocked() {
   await (kind === "new-password" ? showGenerate() : showLogins());
 }
 
+/** Last, like Safari's "Manage Passwords…": text alone, no icon. */
 function openPasswordsRow(withDetail: boolean) {
-  return row(OPEN, "Open Passwords App", withDetail ? "Look up or add a password" : "", async () => {
+  const button = h(
+    "button",
+    { class: "row plain", attrs: { role: "option" } },
+    h(
+      "span",
+      { class: "text" },
+      h("span", { class: "title", textContent: "Manage Passwords…" }),
+      withDetail ? h("span", { class: "detail", textContent: "Opens the Passwords app" }) : null,
+    ),
+  );
+  button.addEventListener("click", async (event) => {
+    if (!deliberate(event)) return;
     await send({ type: "open-passwords-app" }).catch(() => {});
     close();
   });
+  return button;
 }
 
 async function fill(username: string) {

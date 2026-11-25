@@ -16,7 +16,11 @@ export type MenuMode =
   | "locked"
   | "setup";
 
-const WIDTH = 300;
+/** Like Safari's, the menu is as wide as what it lists, within these bounds (not the field's width). */
+const MIN_WIDTH = 220;
+const MAX_WIDTH = 360;
+/** Until the menu page reports its own width. */
+const WIDTH = 260;
 const GAP = 4;
 const MAX_HEIGHT = 320;
 /** How long the menu must have been visible, without a break, before it may fill anything. */
@@ -36,8 +40,8 @@ const HOST_STYLE: Record<string, string> = {
   "z-index": "2147483647",
   "color-scheme": "light dark",
   // the shadow sits outside the iframe, which would clip it; the radius matches the menu panel
-  "border-radius": "10px",
-  "box-shadow": "0 8px 28px light-dark(rgb(0 0 0 / 0.18), rgb(0 0 0 / 0.5)), 0 1px 4px rgb(0 0 0 / 0.12)",
+  "border-radius": "12px",
+  "box-shadow": "0 10px 30px light-dark(rgb(0 0 0 / 0.2), rgb(0 0 0 / 0.55)), 0 2px 6px rgb(0 0 0 / 0.1)",
 };
 
 function createFrame(src: string): HTMLIFrameElement {
@@ -64,6 +68,7 @@ export class MenuHost {
   #anchor: HTMLInputElement | undefined;
   #nonce: string | undefined;
   #height = 48;
+  #width = WIDTH;
   /** Hidden until the menu page reports its size, so an empty frame never shows. */
   #rendered = false;
   /** Hidden while the menu has nothing to show (no login starts with what was typed). */
@@ -142,6 +147,7 @@ export class MenuHost {
     this.#anchor = anchor;
     this.#nonce = nonce;
     this.#height = 48;
+    this.#width = WIDTH;
     this.#rendered = false;
     this.#empty = false;
     this.#focusWhenShown = false;
@@ -200,10 +206,13 @@ export class MenuHost {
   }
 
   /** A height of 0 hides the menu, keeping it open so it can show again. */
-  resize(height: number): void {
+  resize(height: number, width?: number): void {
     this.#rendered = true;
     this.#empty = height === 0;
     if (!this.#empty) this.#height = Math.max(24, Math.min(MAX_HEIGHT, Math.ceil(height)));
+    if (!this.#empty && width !== undefined && Number.isFinite(width)) {
+      this.#width = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, Math.ceil(width)));
+    }
     this.position();
     if (this.#focusWhenShown && this.isShowing) this.focusMenu();
   }
@@ -218,7 +227,7 @@ export class MenuHost {
     }
     const rect = anchor.getBoundingClientRect();
     this.#placedFor = this.#placement();
-    const width = Math.min(Math.max(rect.width, WIDTH), window.innerWidth - 2 * GAP);
+    const width = Math.min(this.#width, window.innerWidth - 2 * GAP);
     const left = Math.min(Math.max(GAP, rect.left), window.innerWidth - width - GAP);
     const below = rect.bottom + GAP;
     const above = rect.top - GAP - this.#height;

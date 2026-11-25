@@ -372,7 +372,7 @@ globalThis.Kit = (() => {
           ? [
               ...logins.map((u) => ({ kind: "login", icon: KEY, title: u, sub: "example.com", value: u })),
               { sep: true },
-              { kind: "app", title: "Open Passwords App…" },
+              { kind: "app", title: "Manage Passwords…" },
             ]
           : [];
       if (field === email) {

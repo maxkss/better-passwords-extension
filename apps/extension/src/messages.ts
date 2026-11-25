@@ -30,7 +30,7 @@ export type Request =
   // inline menu → background → content script of the same tab
   | { type: "fill-from-menu"; nonce: string; username: string }
   | { type: "fill-one-time-code-from-menu"; nonce: string; id: string }
-  | { type: "menu-resize"; nonce: string; height: number }
+  | { type: "menu-resize"; nonce: string; height: number; width?: number }
   | { type: "menu-close"; nonce: string }
   | { type: "menu-focus-field"; nonce: string }
   /** Fresh passwords for the new-password field the menu was opened on, as strong as its rules allow. */
@@ -282,7 +282,7 @@ export type Response<R extends Request> = R["type"] extends keyof Responses ? Re
 export type ContentMessage =
   /** `password` null: fill a username-only step, or answer "needs-password" (see fillCredentials). */
   | { type: "menu-fill"; nonce: string; origin: string; username: string; password: string | null }
-  | { type: "menu-resize"; nonce: string; height: number }
+  | { type: "menu-resize"; nonce: string; height: number; width?: number }
   | { type: "menu-close"; nonce: string }
   /** Moves focus back to the field, keeping the menu open. */
   | { type: "menu-focus-field"; nonce: string }
