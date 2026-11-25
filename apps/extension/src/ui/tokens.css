@@ -1,7 +1,7 @@
 /* Design tokens: native macOS feel (system font, system colors), light and dark. */
 :root {
   color-scheme: light dark;
-  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
   --radius: 8px;
   --radius-small: 6px;
   --space: 12px;
@@ -12,10 +12,24 @@
   --text-secondary: #6e6e73;
   --separator: rgb(0 0 0 / 10%);
   --hover: rgb(0 0 0 / 5%);
-  --accent: #0a84ff;
+  --accent: #0088ff;
   --accent-text: #ffffff;
   --danger: #d70015;
   --warning: #c27c00;
+
+  /* the popup and the extension's pages: grouped lists, as Apple's iOS and iPadOS 27 kit draws them */
+  --grouped: #f2f2f7;
+  --cell: #ffffff;
+  --label: #000000;
+  --label-2: rgb(60 60 67 / 60%);
+  --label-3: rgb(60 60 67 / 30%);
+  --cell-separator: #e6e6e6;
+  --fill: rgb(116 116 128 / 12%);
+  --switch-off: rgb(60 60 67 / 30%);
+  --switch-on: #34c759;
+  --tool-bg: #ffffff;
+  --tool-shadow: 0 0 0 0.5px #e8e8e8, 0 8px 15px rgb(0 0 0 / 2%), 0 1px 3px rgb(0 0 0 / 6%);
+  --tile: #8e8e93;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -26,7 +40,21 @@
     --text-secondary: #98989d;
     --separator: rgb(255 255 255 / 12%);
     --hover: rgb(255 255 255 / 7%);
+    --accent: #0091ff;
     --danger: #ff453a;
     --warning: #ffb340;
+
+    --grouped: #1c1c1e;
+    --cell: #2c2c2e;
+    --label: #ffffff;
+    --label-2: rgb(235 235 245 / 60%);
+    --label-3: rgb(235 235 245 / 30%);
+    --cell-separator: #3a3a3c;
+    --fill: rgb(118 118 128 / 24%);
+    --switch-off: rgb(120 120 128 / 36%);
+    --switch-on: #30d158;
+    --tool-bg: #3a3a3c;
+    --tool-shadow: 0 0 0 0.5px rgb(255 255 255 / 8%);
+    --tile: #636366;
   }
 }

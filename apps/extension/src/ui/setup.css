@@ -1,4 +1,6 @@
-/* The welcome and setup flow (src/ui/setup.ts), in the popup and on the setup page. */
+/* The welcome and setup flow (src/ui/setup.ts), in the popup and on the setup page. Laid out as
+   Apple's iOS and iPadOS 27 kit lays out a welcome screen: app icon, bold title, a line under it,
+   one full-width capsule button, footnotes. */
 
 .setup {
   display: grid;
@@ -12,34 +14,45 @@
 }
 
 .setup .app-icon {
-  width: 48px;
-  height: 48px;
+  width: 64px;
+  height: 64px;
+  border-radius: 14px;
 }
 
 .setup h1 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--text);
+  margin: 4px 0 0;
+  color: var(--label);
+  font-size: 28px;
+  line-height: 34px;
+  font-weight: 700;
+  letter-spacing: 0.38px;
+  text-wrap: balance;
 }
 
 .setup p {
   margin: 0;
-  color: var(--text-secondary);
+  color: var(--label-2);
 }
 
 .setup .lead {
   margin-top: -6px;
+  font-size: 17px;
+  line-height: 22px;
+  letter-spacing: -0.43px;
   text-wrap: balance;
 }
 
 .setup .note {
-  font-size: 12px;
+  font-size: 13px;
+  line-height: 18px;
+  letter-spacing: -0.08px;
 }
 
 .setup .report {
   margin-top: 8px;
-  font-size: 12px;
+  font-size: 13px;
+  line-height: 18px;
+  letter-spacing: -0.08px;
 }
 
 .setup a {
@@ -55,30 +68,38 @@
 .setup .route {
   display: grid;
   justify-items: center;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
-  margin-top: 4px;
+  margin-top: 12px;
 }
 
 .setup .links {
   display: flex;
   justify-content: center;
   gap: 16px;
-  font-size: 12px;
+  font-size: 15px;
+  line-height: 20px;
+  letter-spacing: -0.23px;
 }
 
 .setup .links a {
   text-decoration: none;
 }
 
+/* the kit's full-width capsule button */
 .setup .button {
-  display: block;
+  display: grid;
+  place-items: center;
   width: 100%;
-  padding: 7px 12px;
+  height: 50px;
+  padding: 0 20px;
   border: 0;
-  border-radius: var(--radius-small);
+  border-radius: 25px;
+  background: var(--fill);
+  color: var(--accent);
   font: inherit;
-  font-weight: 500;
+  font-weight: 590;
+  letter-spacing: -0.43px;
   text-align: center;
   text-decoration: none;
   cursor: pointer;
@@ -95,7 +116,9 @@
   background: none;
   color: var(--accent);
   font: inherit;
-  font-size: 12px;
+  font-size: 15px;
+  line-height: 20px;
+  letter-spacing: -0.23px;
   cursor: pointer;
 }
 
@@ -103,12 +126,12 @@
 .command {
   display: block;
   width: 100%;
-  padding: 6px 8px;
-  border: 1px solid var(--separator);
-  border-radius: var(--radius-small);
-  background: var(--surface);
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--cell);
   font:
-    11px / 1.4 ui-monospace,
+    12px / 1.4 ui-monospace,
     SFMono-Regular,
     Menlo,
     monospace;
@@ -120,15 +143,17 @@
 .waiting {
   display: flex;
   align-items: center;
-  gap: 7px;
-  font-size: 12px;
+  gap: 8px;
+  font-size: 15px;
+  line-height: 20px;
+  letter-spacing: -0.23px;
 }
 
 .spinner {
-  width: 12px;
-  height: 12px;
-  border: 2px solid var(--separator);
-  border-top-color: var(--accent);
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--label-3);
+  border-top-color: var(--label-2);
   border-radius: 50%;
   animation: setup-spin 0.8s linear infinite;
 }
@@ -145,26 +170,30 @@
   }
 }
 
-/* "You're connected" / "You're all set" */
+/* "You're connected" / "You're all set": a symbol in a tinted circle */
 .setup .badge {
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
-  background: var(--accent);
-  color: var(--accent-text);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
 }
 
 .setup .badge svg {
-  width: 26px;
-  height: 26px;
+  width: 32px;
+  height: 32px;
 }
 
 .setup .details {
   width: 100%;
-  font-size: 11px;
-  color: var(--text-secondary);
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: var(--cell);
+  color: var(--label-2);
+  font-size: 13px;
+  line-height: 18px;
   text-align: left;
   overflow-wrap: anywhere;
 }

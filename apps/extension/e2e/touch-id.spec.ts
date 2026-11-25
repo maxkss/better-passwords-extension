@@ -10,6 +10,7 @@ test.describe("with the companion app", () => {
     const popup = await context.newPage();
     await popup.goto(popupUrl);
     await expect(popup.getByText("Open a website to see its saved passwords.")).toBeVisible();
+    await popup.getByRole("button", { name: "Settings" }).click();
     await expect(popup.getByLabel("Enter the 6-digit code for me")).toBeChecked();
   });
 
@@ -51,13 +52,15 @@ test.describe("with the companion app", () => {
   test("turning Touch ID off goes back to typing the code", async ({ context, popupUrl }) => {
     const popup = await context.newPage();
     await popup.goto(popupUrl);
+    await popup.getByRole("button", { name: "Settings" }).click();
     await popup.getByLabel("Enter the 6-digit code for me").uncheck();
+    await popup.getByRole("button", { name: "Back" }).click();
     await popup.getByRole("button", { name: "Lock" }).click();
 
     const again = await context.newPage();
     await again.goto(popupUrl);
     await expect(again.getByText("Enter the code shown on your Mac")).toBeVisible();
-    await expect(again.getByRole("button", { name: "Enter it for me" })).toHaveCount(0);
+    await expect(again.getByRole("button", { name: "Enter It With Touch ID" })).toHaveCount(0);
   });
 });
 
@@ -68,7 +71,7 @@ test.describe("when Touch ID is cancelled", () => {
     const popup = await context.newPage();
     await popup.goto(popupUrl);
     await expect(popup.getByText("Touch ID was cancelled.")).toBeVisible();
-    await expect(popup.getByRole("button", { name: "Enter it for me" })).toBeVisible();
+    await expect(popup.getByRole("button", { name: "Enter It With Touch ID" })).toBeVisible();
     await popup.getByLabel("Verification code").fill(PAIRING_CODE);
     await expect(popup.getByText("Open a website to see its saved passwords.")).toBeVisible();
   });
@@ -83,6 +86,7 @@ test.describe("when the companion still needs setup", () => {
     await expect(popup.getByText("Enter the code shown on your Mac")).toBeVisible();
     await expect(popup.getByText("finish setting up the companion app")).toBeVisible();
     await popup.getByLabel("Verification code").fill(PAIRING_CODE);
+    await popup.getByRole("button", { name: "Settings" }).click();
     await expect(popup.getByRole("button", { name: "Finish Setting Up" })).toBeVisible();
   });
 });
