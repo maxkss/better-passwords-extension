@@ -8,7 +8,7 @@ async function typeLogin(page: Page, username: string, password: string, unlock 
     const menu = await menuFrame(page);
     await choose(menu, "Unlock to fill passwords");
     await menu.getByLabel("Verification code").fill(PAIRING_CODE);
-    await expect(menu.getByText("Open Passwords App")).toBeVisible();
+    await expect(menu.getByText("Manage Passwords…")).toBeVisible();
   }
   await page.locator("#user").fill(username);
   await page.locator("#pass").fill(password);

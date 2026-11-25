@@ -374,7 +374,7 @@ export default defineContentScript({
       if (!menu.isCurrent(message.nonce)) return false;
       switch (message.type) {
         case "menu-resize":
-          menu.resize(message.height);
+          menu.resize(message.height, message.width);
           return false;
         case "menu-close": {
           const anchor = menu.anchor;
