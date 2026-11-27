@@ -41,10 +41,14 @@ cp Resources/io.github.maxkss.passwordsplus.agent.plist "$app/Contents/Library/L
 plutil -replace CFBundleShortVersionString -string "$version" "$app/Contents/Info.plist"
 plutil -replace CFBundleVersion -string "$version" "$app/Contents/Info.plist"
 
-iconset="$(mktemp -d)/AppIcon.iconset"
-swift scripts/make-iconset.swift ../extension/assets/icon.svg "$iconset"
-iconutil -c icns -o "$app/Contents/Resources/AppIcon.icns" "$iconset"
-rm -rf "$(dirname "$iconset")"
+# The Icon Composer icon: Assets.car for macOS 26 and later (Liquid Glass, dark and tinted
+# appearances), AppIcon.icns for earlier systems.
+partial="$(mktemp -d)"
+xcrun actool ../extension/assets/AppIcon.icon --compile "$app/Contents/Resources" \
+    --platform macosx --minimum-deployment-target 14.0 --app-icon AppIcon \
+    --output-partial-info-plist "$partial/icon.plist" --errors --warnings >/dev/null
+rm -rf "$partial"
+test -f "$app/Contents/Resources/AppIcon.icns" && test -f "$app/Contents/Resources/Assets.car"
 
 if [ "$identity" = "-" ]; then
     set -- --force --sign - --timestamp=none

@@ -14,6 +14,7 @@
     "test:e2e": "bun run build:chrome && playwright test",
     "capture:store": "bun run build:chrome && playwright test --config media.config.ts",
     "postinstall": "wxt prepare",
+    "icons": "./scripts/render-icons.sh",
     "lint:firefox": "web-ext lint --source-dir .output/firefox-mv2 --warnings-as-errors"
   },
   "dependencies": {
