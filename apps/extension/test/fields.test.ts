@@ -300,10 +300,8 @@ describe("maySignIn", () => {
   });
 });
 
-// Cases field detection still gets wrong, after the ones Kibo's extension covers. Marked `fails`
-// until the change that fixes them; that change moves them into the tables above.
-describe("not yet understood", () => {
-  it.fails.each([
+describe("Korean, single sign-on and hidden fields", () => {
+  it.each([
     [
       // the buttons for signing in with another account say "Sign in", but the form creates one
       "sign-up with SSO buttons",
@@ -336,7 +334,41 @@ describe("not yet understood", () => {
       `<form><label for="f">인증번호</label><input id="f" maxlength="6"></form>`,
       "one-time-code",
     ],
+    [
+      // a field nobody sees (a leftover, a trap for bots) is no confirmation
+      "sign-in with a hidden second password",
+      `<form><input type="email"><input id="f" type="password"><input type="password" style="display: none"><button>Sign in</button></form>`,
+      "login",
+    ],
   ])("reads a %s", (_, html, kind) => {
     expect(fieldKind(field(html))).toBe(kind);
+  });
+
+  it.each([
+    [
+      // "사용자 이름" is a username, not the person's name: no sign-up
+      "Korean username named for a user",
+      `<form><label for="f">사용자 이름</label><input id="f"><input id="p" type="password"><button>로그인</button></form>`,
+      "#p",
+      "login",
+    ],
+    [
+      "Korean sign-in with a sign-up link",
+      `<form><input type="text" name="id"><input id="f" type="password"><button>로그인</button><button type="button">회원가입</button></form>`,
+      "#f",
+      "login",
+    ],
+  ])("keeps a %s a sign-in", (_, html, selector, kind) => {
+    expect(fieldKind(field(html, selector))).toBe(kind);
+  });
+
+  it.each([
+    [
+      "Korean code sent by text message",
+      `<form><label for="f">휴대폰 인증번호</label><input id="f" maxlength="6"></form>`,
+    ],
+    ["Korean search box", `<form><input id="f" type="email" placeholder="이메일 검색"></form>`],
+  ])("ignores a %s", (_, html) => {
+    expect(fieldKind(field(html))).toBeUndefined();
   });
 });

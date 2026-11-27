@@ -1,8 +1,8 @@
 import type { Page } from "@playwright/test";
 import { choose, expect, menuFrame, PAIRING_CODE, test } from "./fixtures.ts";
 
-// Pages that field detection still gets wrong, after the cases Kibo's extension covers. Each test
-// is marked `test.fail()` until the change that fixes it; that change removes the mark.
+// Pages that are easy to misread: fields nobody can see, fields in shadow roots, buttons that
+// aren't <button>s, and buttons that sign in with another account (single sign-on).
 
 /** The inline menu opened on the page, within a few seconds. */
 async function expectMenu(page: Page) {
@@ -23,28 +23,37 @@ async function typeLogin(page: Page, username: string, password: string) {
 
 test.describe("hidden fields", () => {
   test("don't make a sign-in look like a sign-up", async ({ context, siteUrl }) => {
-    test.fail(true, "hidden password fields are counted, so the third one reads as a confirmation");
     const page = await context.newPage();
     await page.goto(`${siteUrl}/hidden-trap.html`);
     await page.locator("#pass").click();
     const menu = await menuFrame(page);
-    await expect(menu.getByText("Unlock to fill passwords")).toBeVisible();
+    await choose(menu, "Unlock to fill passwords");
+    await menu.getByLabel("Verification code").fill(PAIRING_CODE);
+    // and the login goes into the fields people see, not the traps
+    await choose(menu, "e2e-user");
+    await expect(page.locator("#user")).toHaveValue("e2e-user");
+    await expect(page.locator("#pass")).toHaveValue("e2e-pass");
+    await expect(page.locator("[name=trap-user]")).toHaveValue("");
+    await expect(page.locator("[name=trap-pass]")).toHaveValue("");
   });
 });
 
 test.describe("a sign-in in a shadow root", () => {
   test("gets the menu when the root is open", async ({ context, siteUrl }) => {
-    test.fail(true, "focusin's target is the shadow host, not the field");
     const page = await context.newPage();
     await page.goto(`${siteUrl}/shadow.html`);
     // Playwright's locators reach into open shadow roots
     await page.locator("#pass").click();
     await expectMenu(page);
-    await expect((await menuFrame(page)).getByText("Unlock to fill passwords")).toBeVisible();
+    const menu = await menuFrame(page);
+    await choose(menu, "Unlock to fill passwords");
+    await menu.getByLabel("Verification code").fill(PAIRING_CODE);
+    await choose(menu, "e2e-user");
+    await expect(page.locator("#user")).toHaveValue("e2e-user");
+    await expect(page.locator("#pass")).toHaveValue("e2e-pass");
   });
 
   test("gets the menu when the root is closed", async ({ context, siteUrl }) => {
-    test.fail(true, "nothing outside a closed root sees the field: it needs openOrClosedShadowRoot");
     const page = await context.newPage();
     await page.goto(`${siteUrl}/shadow.html?mode=closed`);
     // locators can't reach into a closed root, so click where the page says the field is
@@ -56,12 +65,21 @@ test.describe("a sign-in in a shadow root", () => {
     });
     await page.mouse.click(box.x, box.y);
     await expectMenu(page);
+    const menu = await menuFrame(page);
+    await choose(menu, "Unlock to fill passwords");
+    await menu.getByLabel("Verification code").fill(PAIRING_CODE);
+    await choose(menu, "e2e-user");
+    const values = () =>
+      page.evaluate(() => {
+        const { user, pass } = (window as unknown as { shadowFields: Record<string, HTMLInputElement> }).shadowFields;
+        return [user?.value, pass?.value];
+      });
+    await expect.poll(values).toEqual(["e2e-user", "e2e-pass"]);
   });
 });
 
 test.describe("a sign-in sent by a div", () => {
   test("is saved once the page moves on", async ({ context, siteUrl, helperSaves }) => {
-    test.fail(true, "only button elements and [role=button] count as sending a form");
     const page = await context.newPage();
     await page.goto(`${siteUrl}/div-button.html`);
     await typeLogin(page, "div@example.com", "typed-div-pass");
@@ -75,7 +93,6 @@ test.describe("a sign-in sent by a div", () => {
 
 test.describe("SSO buttons", () => {
   test("don't make a sign-up look like a sign-in", async ({ context, siteUrl }) => {
-    test.fail(true, '"Sign in with Google" counts as the form\'s own sign-in button');
     const page = await context.newPage();
     await page.goto(`${siteUrl}/sso-signup.html`);
     await page.locator("#new").click();
@@ -84,7 +101,6 @@ test.describe("SSO buttons", () => {
   });
 
   test("don't send the password typed so far", async ({ context, siteUrl, helperSaves }) => {
-    test.fail(true, "a click on any button in the form captures its login");
     const page = await context.newPage();
     await page.goto(`${siteUrl}/sso-login.html`);
     await typeLogin(page, "sso@example.com", "never-sent");

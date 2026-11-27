@@ -1,3 +1,4 @@
+import { deepActiveElement, deepTarget } from "@/src/autofill/dom.ts";
 import {
   type FieldKind,
   fieldKind,
@@ -83,7 +84,7 @@ export default defineContentScript({
         orGenerate: undefined,
       }));
       // the user may have moved on while we asked
-      if (ticket !== request || document.activeElement !== field) return;
+      if (ticket !== request || deepActiveElement() !== field) return;
       if (nonce === undefined) {
         menu.close();
       } else if ((kind === "new-password" || (unsure && field === generated?.field)) && field.value !== "") {
@@ -141,10 +142,12 @@ export default defineContentScript({
       document,
       "focusin",
       (event) => {
-        if (event.target === menu.element || fillingCode) return;
-        if (event.target !== dismissed) dismissed = undefined;
-        if (!dismissedCode.has(event.target as HTMLInputElement)) dismissedCode.clear();
-        if (!offerFor(event.target) && menu.isOpen) menu.close();
+        // the field itself, when it's in a shadow root (the page's listeners see its host)
+        const target = deepTarget(event);
+        if (target === menu.element || fillingCode) return;
+        if (target !== dismissed) dismissed = undefined;
+        if (!dismissedCode.has(target as HTMLInputElement)) dismissedCode.clear();
+        if (!offerFor(target) && menu.isOpen) menu.close();
       },
       { capture: true },
     );
@@ -152,13 +155,14 @@ export default defineContentScript({
       document,
       "mousedown",
       (event) => {
-        if (menu.isOpen && event.target !== menu.element && event.target !== menu.anchor) menu.close();
+        const target = deepTarget(event);
+        if (menu.isOpen && target !== menu.element && target !== menu.anchor) menu.close();
         // clicking the field while nothing typed matches brings every login back
-        if (menu.isOpen && !menu.isShowing && event.target === menu.anchor) filterMenu("");
+        if (menu.isOpen && !menu.isShowing && target === menu.anchor) filterMenu("");
         // clicking a field whose menu was dismissed asks for it again
-        if (event.target === dismissed || dismissedCode.has(event.target as HTMLInputElement)) {
+        if (target === dismissed || dismissedCode.has(target as HTMLInputElement)) {
           dismiss(undefined);
-          offerFor(event.target);
+          offerFor(target);
         }
       },
       { capture: true },
@@ -167,14 +171,15 @@ export default defineContentScript({
       document,
       "keydown",
       (event) => {
-        const wasDismissed = event.target === dismissed || dismissedCode.has(event.target as HTMLInputElement);
+        const target = deepTarget(event);
+        const wasDismissed = target === dismissed || dismissedCode.has(target as HTMLInputElement);
         if (event.key === "ArrowDown" && !menu.isOpen && wasDismissed) {
           event.preventDefault();
           dismiss(undefined);
-          offerFor(event.target);
+          offerFor(target);
           return;
         }
-        if (!menu.isOpen || event.target !== menu.anchor) return;
+        if (!menu.isOpen || target !== menu.anchor) return;
         if (event.key === "Escape") {
           dismiss(menu.anchor);
           menu.close();
@@ -196,8 +201,8 @@ export default defineContentScript({
       "input",
       (event) => {
         // only the user's own typing: text the page sets itself must not probe which logins match
-        if (!event.isTrusted || !menu.isOpen || event.target !== menu.anchor) return;
-        const kind = fieldKind(event.target);
+        if (!event.isTrusted || !menu.isOpen || deepTarget(event) !== menu.anchor) return;
+        const kind = fieldKind(menu.anchor);
         if (kind === "login" && menu.anchor.type !== "password") filterMenu(menu.anchor.value);
         if (kind === "email") filterMenu(menu.anchor.value);
         if (kind === "login" && menu.anchor.type === "password") {
@@ -240,7 +245,8 @@ export default defineContentScript({
       document,
       "change",
       (event) => {
-        if (isUsernameInput(event.target) && event.target.value.trim()) lastUsername = event.target.value.trim();
+        const target = deepTarget(event);
+        if (isUsernameInput(target) && target.value.trim()) lastUsername = target.value.trim();
         trackUsername();
       },
       { capture: true },
@@ -289,7 +295,7 @@ export default defineContentScript({
       document,
       "click",
       (event) => {
-        if (event.isTrusted) noteSent(submittedScope(event.target));
+        if (event.isTrusted) noteSent(submittedScope(deepTarget(event)));
       },
       { capture: true },
     );
@@ -297,7 +303,7 @@ export default defineContentScript({
       document,
       "keydown",
       (event) => {
-        if (event.isTrusted && event.key === "Enter") noteSent(submittedScope(event.target, "Enter"));
+        if (event.isTrusted && event.key === "Enter") noteSent(submittedScope(deepTarget(event), "Enter"));
       },
       { capture: true },
     );
@@ -306,7 +312,7 @@ export default defineContentScript({
       document,
       "input",
       (event) => {
-        if (!event.isTrusted || !sent || event.target !== sent.field || sent.field.value === sent.password) return;
+        if (!event.isTrusted || !sent || deepTarget(event) !== sent.field || sent.field.value === sent.password) return;
         sent = undefined;
         stopWatchingSent();
         void send({ type: "login-edited" }).catch(() => {});
@@ -361,7 +367,7 @@ export default defineContentScript({
       }
       if (message.type === "fill-one-time-code") {
         // from the popup: the focused code field, else the page's first one
-        const focused = document.activeElement;
+        const focused = deepActiveElement();
         const field =
           focused instanceof HTMLInputElement && isOneTimeCodeField(focused)
             ? focused
@@ -462,6 +468,6 @@ export default defineContentScript({
       }
     }
 
-    offerFor(document.activeElement);
+    offerFor(deepActiveElement());
   },
 });
