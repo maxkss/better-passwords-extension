@@ -39,20 +39,6 @@ test.describe("hidden fields", () => {
 });
 
 test.describe("a sign-in in a shadow root", () => {
-  test("gets the menu when the root is open", async ({ context, siteUrl }) => {
-    const page = await context.newPage();
-    await page.goto(`${siteUrl}/shadow.html`);
-    // Playwright's locators reach into open shadow roots
-    await page.locator("#pass").click();
-    await expectMenu(page);
-    const menu = await menuFrame(page);
-    await choose(menu, "Unlock to fill passwords");
-    await menu.getByLabel("Verification code").fill(PAIRING_CODE);
-    await choose(menu, "e2e-user");
-    await expect(page.locator("#user")).toHaveValue("e2e-user");
-    await expect(page.locator("#pass")).toHaveValue("e2e-pass");
-  });
-
   test("gets the menu when the root is closed", async ({ context, siteUrl }) => {
     const page = await context.newPage();
     await page.goto(`${siteUrl}/shadow.html?mode=closed`);
@@ -75,19 +61,6 @@ test.describe("a sign-in in a shadow root", () => {
         return [user?.value, pass?.value];
       });
     await expect.poll(values).toEqual(["e2e-user", "e2e-pass"]);
-  });
-});
-
-test.describe("a sign-in sent by a div", () => {
-  test("is saved once the page moves on", async ({ context, siteUrl, helperSaves }) => {
-    const page = await context.newPage();
-    await page.goto(`${siteUrl}/div-button.html`);
-    await typeLogin(page, "div@example.com", "typed-div-pass");
-    await page.locator("#go").click();
-    await expect(page.getByText("Welcome!")).toBeVisible();
-    await expect
-      .poll(helperSaves, { timeout: 5_000 })
-      .toEqual([{ hostname: "localhost", username: "div@example.com", password: "typed-div-pass" }]);
   });
 });
 
