@@ -631,6 +631,7 @@ async function showSettings(status: Status) {
         option("inlineMenu", "When signing in", "Saved passwords"),
         option("oneTimeCodes", "Verification codes", "When a site asks for one"),
         option("generatePasswords", "When signing up", "Strong passwords and emails"),
+        option("passphrases", "Passphrases too", "Words that are easier to type"),
         option("hideMyEmail", "Hide My Email", "iCloud+ addresses for each site"),
       ),
       // Firefox's idle API never reports "locked", so the option would do nothing there

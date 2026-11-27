@@ -367,3 +367,25 @@ test("typing a password of one's own closes the suggestions", async ({ context, 
   await page.waitForTimeout(500);
   expect(await page.locator("app-autofill-menu").count()).toBe(0);
 });
+
+test("suggests a passphrase too when asked to, and fills it", async ({ context, siteUrl, popupUrl }) => {
+  const popup = await context.newPage();
+  await popup.goto(popupUrl);
+  await popup.evaluate(() => {
+    type Runtime = { runtime: { sendMessage(message: unknown): Promise<unknown> } };
+    const { chrome } = globalThis as unknown as { chrome: Runtime };
+    return chrome.runtime.sendMessage({ type: "set-settings", settings: { passphrases: true } });
+  });
+  await popup.close();
+
+  const page = await context.newPage();
+  await page.goto(`${siteUrl}/signup.html`);
+  const menu = await unlockedMenu(page);
+  await expect(menu.getByText("Passphrase", { exact: true })).toBeVisible();
+  // strong, without special characters, then the passphrase
+  const phrase = await revealed(menu, 2);
+  expect(phrase).toMatch(/^([A-Za-z]+[0-9]?-){4,}[A-Za-z]+[0-9]?$/);
+  await choose(menu, "Passphrase");
+  await expect(page.locator("#new")).toHaveValue(phrase);
+  await expect(page.locator("#confirm")).toHaveValue(phrase);
+});

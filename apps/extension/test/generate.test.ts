@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
+import WORDS from "../src/passwords/eff-large-wordlist.json";
 import {
   allowsSpecialCharacters,
   type FieldRules,
+  generatePassphrase,
   generatePassword,
   PasswordRulesError,
   parseRules,
@@ -203,5 +205,48 @@ describe("allowsSpecialCharacters", () => {
     expect(allowsSpecialCharacters({ passwordRules: "allowed: lower, upper, [-]" })).toBe(true);
     expect(allowsSpecialCharacters({ passwordRules: "allowed: digit" })).toBe(false);
     expect(allowsSpecialCharacters({ passwordRules: "required: lower, upper, digit" })).toBe(false);
+  });
+});
+
+describe("generatePassphrase", () => {
+  const words = new Set(WORDS);
+
+  it("uses EFF's whole large list", () => {
+    expect(words.size).toBe(7776);
+  });
+
+  it("joins six words with one capital and one digit", () => {
+    repeat(200, () => {
+      const { password: phrase, strength } = generatePassphrase();
+      expect(strength).toBe("strong");
+      // hyphens inside a word (t-shirt) would split it: count by the list instead
+      expect(phrase.replace(/[^A-Z]/g, "")).toHaveLength(1);
+      expect(phrase.replace(/[^0-9]/g, "")).toHaveLength(1);
+      const plain = phrase.toLowerCase().replace(/[0-9]/, "");
+      expect(plain.split("-").every((part) => words.has(part) || /^(drop|down|felt|tip|t|shirt|yo)$/.test(part))).toBe(
+        true,
+      );
+      expect(plain.split("-").length).toBeGreaterThanOrEqual(6);
+    });
+  });
+
+  it("meets the rules sites state most", () => {
+    const rules: FieldRules = { passwordRules: "required: upper; required: lower; required: digit; required: [-]" };
+    repeat(50, () => expect(generatePassphrase(rules).password).toMatch(/[A-Z]/));
+  });
+
+  it("takes fewer words for a site's length limit", () => {
+    repeat(50, () => {
+      const phrase = generatePassphrase({ maxLength: 42 }).password;
+      expect(phrase.length).toBeLessThanOrEqual(42);
+    });
+  });
+
+  it.each<[string, FieldRules]>([
+    ["too short a limit", { maxLength: 20 }],
+    ["no hyphens", { passwordRules: "allowed: upper, lower, digit" }],
+    ["a special character it never has", { passwordRules: "required: [!]" }],
+  ])("gives none for %s", (_, rules) => {
+    expect(() => generatePassphrase(rules)).toThrow(PasswordRulesError);
   });
 });

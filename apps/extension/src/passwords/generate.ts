@@ -8,6 +8,12 @@
 // A site's limits can make that password weaker than usual. It's still offered, as the strongest
 // the site accepts (anything the user makes up instead would be weaker), and its strength says so.
 // Only rules no password can meet, or that leave too few passwords to keep one secret, get none.
+//
+// A passphrase is offered too when the user asks for one: words from EFF's large list, easier to
+// read out and type on a phone. It's as strong as the default, so a site whose limits it doesn't
+// fit gets none rather than a weaker one.
+
+import WORDS from "./eff-large-wordlist.json";
 
 export type PasswordStyle = "strong" | "alphanumeric";
 
@@ -323,5 +329,33 @@ export function generatePassword(
     return strength === "strong" ? { password, strength } : { password, strength, limit: limitOf(fieldRules) };
   }
   // rules that look possible but that random passwords keep failing
+  throw new PasswordRulesError("contradict");
+}
+
+/** Words in a passphrase: about 77 bits from the words, more from the capital and the digit. */
+const PASSPHRASE_WORDS = 6;
+/** Fewer words when a site's length limit asks for it: still about 72 bits, still strong. */
+const SHORT_PASSPHRASE_WORDS = 5;
+
+/**
+ * Words from EFF's large list (7,776 words, about 12.9 bits each), joined by hyphens, with one
+ * word capitalized and one digit after a word: the capital and digit most sites ask for. Throws
+ * `PasswordRulesError` when the site's rules don't take one (too long, no hyphens, ...).
+ */
+export function generatePassphrase(fieldRules: FieldRules = {}, random: RandomIndex = cryptoRandomIndex): Suggestion {
+  const rules = parseRules(fieldRules);
+  for (const count of [PASSPHRASE_WORDS, SHORT_PASSPHRASE_WORDS]) {
+    for (let attempt = 0; attempt < ATTEMPTS; attempt++) {
+      const words = Array.from({ length: count }, () => WORDS[random(WORDS.length)] ?? "");
+      const capital = random(count);
+      words[capital] = (words[capital]?.charAt(0).toUpperCase() ?? "") + (words[capital]?.slice(1) ?? "");
+      const withDigit = random(count);
+      words[withDigit] += String(random(10));
+      const passphrase = words.join("-");
+      if (satisfies(passphrase, rules)) return { password: passphrase, strength: "strong" };
+      // too long: another draw may be shorter, then fewer words; no draw meets any other rule
+      if (passphrase.length <= rules.maxLength) throw new PasswordRulesError("contradict");
+    }
+  }
   throw new PasswordRulesError("contradict");
 }
