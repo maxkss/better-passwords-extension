@@ -28,8 +28,11 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* one column no wider than the popup: a grid column otherwise grows to its longest unwrapped line
+   (a row's subtitle, cut off with an ellipsis), pushing the lists past the right edge */
 main {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   padding: 0 13px 13px;
 }
 
