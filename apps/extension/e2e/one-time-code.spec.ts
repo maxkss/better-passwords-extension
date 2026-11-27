@@ -64,68 +64,6 @@ test("offers the code of the account just signed in with, and fills it without s
   await expectNoMenu(page);
 });
 
-test("spreads the code over one box per digit", async ({ context, siteUrl }) => {
-  const page = await context.newPage();
-  await signIn(page, `${siteUrl}/two-factor.html?variant=split`, "alice");
-  await page.locator("#d0").click();
-  const menu = await menuFrame(page);
-  await choose(menu, "alice · localhost");
-  await expect(page.locator("#d5")).not.toHaveValue("");
-  const digits = await Promise.all([0, 1, 2, 3, 4, 5].map((i) => page.locator(`#d${i}`).inputValue()));
-  expect(await codesFor(ALICE)).toContain(digits.join(""));
-  await expect(page.locator("#submitted")).toHaveText("0");
-  await expectNoMenu(page);
-});
-
-test("finds an unmarked code field, and fills it from the keyboard", async ({ context, siteUrl }) => {
-  const page = await context.newPage();
-  await signIn(page, `${siteUrl}/two-factor.html?variant=heuristic`, "alice");
-  await page.locator("#code").click();
-  const menu = await menuFrame(page);
-  await expect(menu.getByText("alice · localhost")).toBeVisible();
-  await page.keyboard.press("ArrowDown");
-  await expect(menu.getByRole("option", { name: /alice · localhost/ })).toBeFocused();
-  await page.keyboard.press("Enter");
-  await expect(page.locator("#code")).toHaveValue(/^\d{6}$/);
-  expect(await codesFor(ALICE)).toContain(await page.locator("#code").inputValue());
-});
-
-test("stays out of the way of a code typed by hand", async ({ context, siteUrl }) => {
-  const page = await context.newPage();
-  await signIn(page, `${siteUrl}/two-factor.html`, "alice");
-  await page.locator("#code").click();
-  await menuFrame(page);
-  await page.keyboard.type("1");
-  await expectNoMenu(page);
-});
-
-test.describe("without saved verification codes", () => {
-  test.use({
-    vaultEntries: [[{ hostname: "localhost", username: "alice", password: "alice-pass" }], { scope: "test" }],
-  });
-
-  test("shows no menu in a code field (it may want an SMS code)", async ({ context, siteUrl }) => {
-    const page = await context.newPage();
-    await signIn(page, `${siteUrl}/two-factor.html`, "alice");
-    await page.locator("#code").click();
-    await expectNoMenu(page);
-  });
-});
-
-test("the setting turns code suggestions off", async ({ context, siteUrl, popupUrl }) => {
-  const popup = await context.newPage();
-  await popup.goto(popupUrl);
-  await popup.evaluate(() =>
-    (
-      globalThis as unknown as { chrome: { runtime: { sendMessage(m: unknown): Promise<unknown> } } }
-    ).chrome.runtime.sendMessage({ type: "set-settings", settings: { oneTimeCodes: false } }),
-  );
-  const page = await context.newPage();
-  await signIn(page, `${siteUrl}/two-factor.html`, "alice");
-  await page.locator("#code").click();
-  await expectNoMenu(page);
-});
-
 test("an extension page inside a tab can't read a code's digits", async ({ context, siteUrl, popupUrl }) => {
   const page = await context.newPage();
   await signIn(page, `${siteUrl}/two-factor.html`, "alice");

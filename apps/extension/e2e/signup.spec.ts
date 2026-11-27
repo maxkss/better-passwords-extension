@@ -57,79 +57,6 @@ async function expectNoSave(page: Page, helperSaves: () => unknown[]) {
 
 const create = (page: Page) => page.getByRole("button", { name: "Create account" }).click();
 
-/** Opens the sign-up page with these attributes on its new password field. */
-async function signupWith(page: Page, siteUrl: string, attributes: Record<string, string>) {
-  await page.goto(`${siteUrl}/signup.html`);
-  await page.locator("#new").evaluate((field, attrs) => {
-    for (const [name, value] of Object.entries(attrs)) field.setAttribute(name, value);
-  }, attributes);
-}
-
-test("suggests nothing when the site's rules leave no password worth suggesting", async ({
-  context,
-  siteUrl,
-  helperSaves,
-}) => {
-  const page = await context.newPage();
-  await signupWith(page, siteUrl, { maxlength: "1" });
-  const menu = await unlockedMenu(page);
-  await expect(
-    menu.getByText("No suggestion. This site limits passwords to 1 character, which anyone could guess."),
-  ).toBeVisible();
-  await expect(menu.locator(".password")).toHaveCount(0);
-  await expect(page.locator("#new")).toHaveValue("");
-  expect(helperSaves()).toEqual([]);
-});
-
-test("says why a password the site's rules held back is weaker, and still fills it", async ({ context, siteUrl }) => {
-  const page = await context.newPage();
-  await signupWith(page, siteUrl, { maxlength: "8" });
-  const menu = await unlockedMenu(page);
-  await expect(menu.getByText("Suggested Password", { exact: true })).toBeVisible();
-  await expect(menu.getByText("Strong Password", { exact: true })).toHaveCount(0);
-  // the site takes special characters: the alternative without them is there, every time
-  await expect(menu.getByText("Without Special Characters", { exact: true })).toBeVisible();
-  // short: none of it shows until the eye is hovered
-  await expect(menu.locator(".password").first()).toHaveText("••••••••");
-  // the badge explains, without choosing the password
-  // (each of the two suggestions has its note: the first one's)
-  const why = menu.getByText("This site limits passwords to 8 characters.", { exact: true }).first();
-  await expect(why).toBeHidden();
-  await menu.waitForTimeout(500);
-  await menu.locator(".badge").first().click();
-  await expect(why).toBeVisible();
-  await expect(page.locator("#new")).toHaveValue("");
-  await choose(menu, "Suggested Password");
-  await expect(page.locator("#new")).toHaveValue(/^.{8}$/);
-});
-
-test("follows the first field's limits when opened on the confirmation", async ({ context, siteUrl }) => {
-  const page = await context.newPage();
-  await signupWith(page, siteUrl, { maxlength: "8" });
-  await page.locator("#confirm").click();
-  const menu = await menuFrame(page);
-  if (await menu.getByText("Unlock to suggest a strong password").isVisible()) {
-    await choose(menu, "Unlock to suggest a strong password");
-    await menu.getByLabel("Verification code").fill(PAIRING_CODE);
-  }
-  await expect(menu.getByText("Suggested Password", { exact: true })).toBeVisible();
-  await choose(menu, "Suggested Password");
-  await expect(page.locator("#new")).toHaveValue(/^.{8}$/);
-  await expect(page.locator("#confirm")).toHaveValue(await page.locator("#new").inputValue());
-});
-
-test("offers no alternative without special characters when the site requires one", async ({ context, siteUrl }) => {
-  const page = await context.newPage();
-  await signupWith(page, siteUrl, {
-    passwordrules: "required: lower; required: upper; required: digit; required: [!#]; minlength: 24",
-  });
-  const menu = await unlockedMenu(page);
-  await expect(menu.getByText("Strong Password", { exact: true })).toBeVisible();
-  await expect(menu.getByText("Without Special Characters", { exact: true })).toHaveCount(0);
-  await choose(menu, "Strong Password");
-  await expect(page.locator("#new")).toHaveValue(/[!#]/);
-});
-
 test("fills a strong password at once and saves it once the sign-up goes through", async ({
   context,
   siteUrl,
@@ -160,164 +87,12 @@ test("fills a strong password at once and saves it once the sign-up goes through
     .toBe(true);
 });
 
-test("offers passwords without special characters; the eye chooses like its row", async ({
-  context,
-  siteUrl,
-  helperSaves,
-}) => {
-  const page = await context.newPage();
-  await page.goto(`${siteUrl}/signup.html`);
-  const menu = await unlockedMenu(page);
-  const password = await revealed(menu, 1);
-  expect(password).toMatch(/^[a-zA-Z0-9]{20}$/);
-  await menu.locator(".reveal").nth(1).click();
-  await expect(page.locator("#new")).toHaveValue(password);
-  // no username in the form: macOS asks for one in its dialog when saving
-  await create(page);
-  await expect.poll(helperSaves).toEqual([{ hostname: "localhost", username: "", password }]);
-});
-
 test("never offers new passwords on a login form", async ({ context, siteUrl }) => {
   const page = await context.newPage();
   await page.goto(`${siteUrl}/login.html`);
   await page.locator("#pass").click();
   const menu = await menuFrame(page);
   await expect(menu.getByText("Unlock to fill passwords")).toBeVisible();
-});
-
-test.describe("asks to save once the page moves on with the password", () => {
-  test("not while the browser blocks an invalid form", async ({ context, siteUrl, helperSaves }) => {
-    const page = await context.newPage();
-    await page.goto(`${siteUrl}/signup.html`);
-    await page.locator("#email").fill("not-an-email");
-    const password = await fillStrongPassword(page);
-    await create(page);
-    await expectNoSave(page, helperSaves);
-    // fixed and sent again: saved
-    await page.locator("#email").fill("fixed@example.com");
-    await create(page);
-    await expect.poll(helperSaves).toEqual([{ hostname: "localhost", username: "fixed@example.com", password }]);
-  });
-
-  test("not when the site rejects it", async ({ context, siteUrl, helperSaves }) => {
-    const page = await context.newPage();
-    await page.goto(`${siteUrl}/signup.html?mode=error`);
-    await page.locator("#email").fill("taken@example.com");
-    await fillStrongPassword(page);
-    await create(page);
-    await expect(page.getByRole("alert")).toHaveText("That email is already taken.");
-    await expectNoSave(page, helperSaves);
-  });
-
-  test("when the form navigates", async ({ context, siteUrl, helperSaves }) => {
-    const page = await context.newPage();
-    await page.goto(`${siteUrl}/signup.html?mode=navigate`);
-    await page.locator("#email").fill("classic@example.com");
-    const password = await fillStrongPassword(page);
-    await create(page);
-    await expect(page.getByText("Welcome!")).toBeVisible();
-    await expect.poll(helperSaves).toEqual([{ hostname: "localhost", username: "classic@example.com", password }]);
-  });
-
-  test("when Enter sends the form", async ({ context, siteUrl, helperSaves }) => {
-    const page = await context.newPage();
-    await page.goto(`${siteUrl}/signup.html`);
-    await page.locator("#email").fill("enter@example.com");
-    const password = await fillStrongPassword(page);
-    await page.locator("#confirm").press("Enter");
-    await expect.poll(helperSaves).toEqual([{ hostname: "localhost", username: "enter@example.com", password }]);
-  });
-
-  test("when a sign-up dialog closes after creating the account", async ({ context, siteUrl, helperSaves }) => {
-    const page = await context.newPage();
-    await page.goto(`${siteUrl}/modal.html`);
-    await page.locator("#email").fill("dialog@example.com");
-    const password = await fillStrongPassword(page);
-    await create(page);
-    await expect.poll(helperSaves).toEqual([{ hostname: "localhost", username: "dialog@example.com", password }]);
-  });
-
-  test("also when the dialog is dismissed: better to ask, Not Now is one click", async ({
-    context,
-    siteUrl,
-    helperSaves,
-  }) => {
-    const page = await context.newPage();
-    await page.goto(`${siteUrl}/modal.html`);
-    await page.locator("#email").fill("dismissed@example.com");
-    const password = await fillStrongPassword(page);
-    await page.getByRole("button", { name: "Close" }).click();
-    await expect.poll(helperSaves).toEqual([{ hostname: "localhost", username: "dismissed@example.com", password }]);
-  });
-
-  test("on multi-step sign-ups, with the email from the earlier step", async ({ context, siteUrl, helperSaves }) => {
-    const page = await context.newPage();
-    await page.goto(`${siteUrl}/multistep.html`);
-    await page.locator("#email").fill("steps@example.com");
-    await page.getByRole("button", { name: "Continue" }).click();
-    const password = await fillStrongPassword(page);
-    await create(page);
-    await expect.poll(helperSaves).toEqual([{ hostname: "localhost", username: "steps@example.com", password }]);
-  });
-
-  test("on pages without a form", async ({ context, siteUrl, helperSaves }) => {
-    const page = await context.newPage();
-    await page.goto(`${siteUrl}/formless.html`);
-    await page.locator("#email").fill("formless@example.com");
-    const password = await fillStrongPassword(page);
-    await page.getByRole("button", { name: "Sign up" }).click();
-    await expect.poll(helperSaves).toEqual([{ hostname: "localhost", username: "formless@example.com", password }]);
-  });
-
-  test("when the page is left with the password in it, once", async ({ context, siteUrl, helperSaves }) => {
-    const page = await context.newPage();
-    await page.goto(`${siteUrl}/signup.html`);
-    await page.locator("#email").fill("left@example.com");
-    const password = await fillStrongPassword(page);
-    await page.goto(`${siteUrl}/login.html`);
-    await expect.poll(helperSaves).toEqual([{ hostname: "localhost", username: "left@example.com", password }]);
-    await page.goto(`${siteUrl}/signup.html`);
-    await page.waitForTimeout(1_000);
-    expect(helperSaves()).toHaveLength(1);
-  });
-});
-
-test("replacing a saved password is saved on submit and assumed done", async ({ context, siteUrl, helperSaves }) => {
-  const page = await context.newPage();
-  await page.goto(`${siteUrl}/signup.html?mode=spa`);
-  // e2e-user already has a saved password for this site
-  await page.locator("#email").fill("e2e-user@example.com");
-  await page.evaluate(() => {
-    (document.getElementById("email") as HTMLInputElement).type = "text";
-  });
-  await page.locator("#email").fill("e2e-user");
-  const password = await fillStrongPassword(page);
-  await create(page);
-  await expect.poll(helperSaves).toEqual([{ hostname: "localhost", username: "e2e-user", password }]);
-  await expect
-    .poll(async () => {
-      await page.locator("#email").click();
-      await page.locator("#new").click();
-      return (await menuFrame(page)).getByText("Strong Password Saved").isVisible();
-    })
-    .toBe(true);
-});
-
-test.describe("when the user doesn't save", () => {
-  test.use({ declineSaves: true });
-
-  test("the password stays filled, and the field says it isn't saved", async ({ context, siteUrl, helperSaves }) => {
-    const page = await context.newPage();
-    await page.goto(`${siteUrl}/signup.html?mode=spa`);
-    await page.locator("#email").fill("no-save@example.com");
-    const password = await fillStrongPassword(page);
-    await create(page);
-    await expectNoSave(page, helperSaves);
-    await expect(page.locator("#new")).toHaveValue(password);
-    await page.locator("#email").click();
-    await page.locator("#new").click();
-    await expect((await menuFrame(page)).getByText("You'll be asked to save it when you continue")).toBeVisible();
-  });
 });
 
 test("an extension page inside a tab can't list or save the popup's recent passwords", async ({
@@ -351,21 +126,6 @@ test("an extension page inside a tab can't list or save the popup's recent passw
     { ok: false, error: "not allowed" },
   ]);
   await expectNoSave(page, helperSaves);
-});
-
-test("typing a password of one's own closes the suggestions", async ({ context, siteUrl }) => {
-  const page = await context.newPage();
-  await page.goto(`${siteUrl}/signup.html`);
-  const menu = await unlockedMenu(page);
-  await expect(menu.getByText("Without Special Characters")).toBeVisible();
-  await page.locator("#new").focus();
-  await page.keyboard.type("my own password");
-  await expect.poll(() => page.locator("app-autofill-menu").count()).toBe(0);
-  // and it stays closed for that field
-  await page.locator("#email").click();
-  await page.locator("#new").click();
-  await page.waitForTimeout(500);
-  expect(await page.locator("app-autofill-menu").count()).toBe(0);
 });
 
 test("suggests a passphrase too when asked to, and fills it", async ({ context, siteUrl, popupUrl }) => {

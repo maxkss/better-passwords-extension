@@ -49,6 +49,7 @@ Chrome 137+ ignores `--load-extension`. Either load the folder from `chrome://ex
 
 - Commits follow [Conventional Commits](https://www.conventionalcommits.org) (`feat:`, `fix:`, `docs:`, …). A git hook checks this, and the type decides the next release (see [docs/release.md](docs/release.md)).
 - Keep PRs focused, and add tests for behavior changes. Protocol changes need unit tests. Fill logic needs DOM tests.
+- Test in the narrowest layer that shows the behavior. The e2e suite is kept to about 30 tests, one per user-facing flow plus the security boundaries only a real browser shows. Add one only when a unit test can't show the change, at most one per change. While iterating, run just the spec you touched (`bunx playwright test e2e/<file>.spec.ts`); the full suite runs in CI.
 - Changes to pairing, encryption, filling or the setup script get extra review. Say so in the PR description.
 
 By contributing, you agree to follow the [Code of Conduct](CODE_OF_CONDUCT.md) and license your work under the [MIT License](LICENSE).
