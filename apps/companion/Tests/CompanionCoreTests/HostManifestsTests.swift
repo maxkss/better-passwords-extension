@@ -31,10 +31,10 @@ func makeBrowserFolder(_ path: String, in support: URL) throws {
         let chrome = support.appendingPathComponent("Google/Chrome/NativeMessagingHosts")
         let bridge =
             try JSONSerialization.jsonObject(
-                with: Data(contentsOf: chrome.appendingPathComponent("io.github.fanckush.betterpasswords.bridge.json")))
+                with: Data(contentsOf: chrome.appendingPathComponent("io.github.maxkss.passwordsplus.bridge.json")))
             as? [String: Any]
         #expect(bridge?["path"] as? String == Identity.helperPath)
-        #expect(bridge?["allowed_origins"] as? [String] == ["chrome-extension://ocongmkplhijgajnipnhhggfcjfdilgj/"])
+        #expect(bridge?["allowed_origins"] as? [String] == ["chrome-extension://dldapmofalpjbidlgmmjkiikhhckemlo/"])
         #expect(!FileManager.default.fileExists(atPath: support.appendingPathComponent("Chromium").path))
     }
 
@@ -48,7 +48,7 @@ func makeBrowserFolder(_ path: String, in support: URL) throws {
         let mozilla = support.appendingPathComponent("Mozilla/NativeMessagingHosts")
         #expect(
             FileManager.default.fileExists(
-                atPath: mozilla.appendingPathComponent("io.github.fanckush.betterpasswords.bridge.json").path))
+                atPath: mozilla.appendingPathComponent("io.github.maxkss.passwordsplus.bridge.json").path))
         #expect(
             !FileManager.default.fileExists(atPath: support.appendingPathComponent("zen/NativeMessagingHosts").path))
         #expect(HostManifests.connected(hostPath: "/h", support: support).map(\.name) == ["Zen"])
@@ -63,7 +63,7 @@ func makeBrowserFolder(_ path: String, in support: URL) throws {
         let chromium = support.appendingPathComponent("Chromium/NativeMessagingHosts")
         #expect(
             FileManager.default.fileExists(
-                atPath: chromium.appendingPathComponent("io.github.fanckush.betterpasswords.companion.json").path))
+                atPath: chromium.appendingPathComponent("io.github.maxkss.passwordsplus.companion.json").path))
         // the folder made for Search's manifests isn't a Chromium install
         #expect(HostManifests.installed(in: support).map(\.name) == ["Search"])
         #expect(HostManifests.connected(hostPath: "/h", support: support).map(\.name) == ["Search"])
@@ -88,7 +88,7 @@ func makeBrowserFolder(_ path: String, in support: URL) throws {
         let chrome = support.appendingPathComponent("Google/Chrome/NativeMessagingHosts")
         #expect(
             FileManager.default.fileExists(
-                atPath: chrome.appendingPathComponent("io.github.fanckush.betterpasswords.companion.json").path))
+                atPath: chrome.appendingPathComponent("io.github.maxkss.passwordsplus.companion.json").path))
         // the folder made for Orion's manifests isn't a Chrome install
         #expect(HostManifests.installed(in: support).map(\.name) == ["Orion"])
         #expect(HostManifests.connected(hostPath: "/h", support: support).map(\.name) == ["Orion"])
@@ -117,7 +117,7 @@ func makeBrowserFolder(_ path: String, in support: URL) throws {
         let manifests = HostManifests.manifests(for: chrome, hostPath: "/h")
         #expect(manifests.count == 2)
         for manifest in manifests {
-            #expect(manifest.allowedOrigins == ["chrome-extension://ocongmkplhijgajnipnhhggfcjfdilgj/"])
+            #expect(manifest.allowedOrigins == ["chrome-extension://dldapmofalpjbidlgmmjkiikhhckemlo/"])
             #expect(manifest.allowedExtensions == nil)
         }
     }

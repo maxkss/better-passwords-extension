@@ -9,7 +9,7 @@ import { ApplePasswordsClient, type ClientState, ProtocolError, type Transport }
 /**
  * "no-helper": this browser has no registration for the helper (setup needed). "blocked": it has
  * one, but the helper quits before answering: macOS kills it when the browser isn't one Apple lets
- * start it (its launch constraints), which Better Passwords can't fix. On Windows it means the
+ * start it (its launch constraints), which Passwords Plus can't fix. On Windows it means the
  * registered helper won't start: iCloud for Windows was removed, or its helper alias turned off.
  */
 export type SessionState = "disconnected" | "no-helper" | "blocked" | ClientState;

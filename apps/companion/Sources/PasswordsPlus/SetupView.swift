@@ -35,7 +35,7 @@ struct SetupView: View {
             model.handle(request)
         }
         .onReceive(timer) { _ in model.refresh() }
-        .confirmationDialog("Remove Better Passwords' setup?", isPresented: $confirmingRemoval) {
+        .confirmationDialog("Remove Passwords Plus' setup?", isPresented: $confirmingRemoval) {
             Button("Remove Setup", role: .destructive) { model.removeAll() }
         } message: {
             Text(
@@ -52,7 +52,7 @@ struct SetupView: View {
                 .frame(width: 72, height: 72)
             Text("Move to Applications").font(.title2.bold())
             Text(
-                "Better Passwords runs from your Applications folder, where your browsers and macOS start it. "
+                "Passwords Plus runs from your Applications folder, where your browsers and macOS start it. "
                     + "It opens again from there."
             )
             .multilineTextAlignment(.center)
@@ -90,7 +90,7 @@ struct SetupView: View {
                     .resizable()
                     .frame(width: 48, height: 48)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Better Passwords").font(.title2.bold())
+                    Text("Passwords Plus").font(.title2.bold())
                     Label(
                         model.needsAttention
                             ? "Needs your attention" : "Works in the background. You can close this window.",
@@ -203,12 +203,12 @@ struct SetupView: View {
         case .connected(let name):
             (
                 "checkmark.circle.fill", .green, "\(name) is connected",
-                "Go back to \(name). Better Passwords notices by itself."
+                "Go back to \(name). Passwords Plus notices by itself."
             )
         case .allConnected:
             (
                 "checkmark.circle.fill", .green, "Your browsers are connected",
-                "Go back to your browser. Better Passwords notices by itself."
+                "Go back to your browser. Passwords Plus notices by itself."
             )
         case .blocked(let name):
             (
@@ -218,7 +218,7 @@ struct SetupView: View {
             )
         case .unknown(let name):
             (
-                "questionmark.circle.fill", .orange, "Better Passwords doesn't know \(name) yet",
+                "questionmark.circle.fill", .orange, "Passwords Plus doesn't know \(name) yet",
                 "A newer version of the app may. If not, ask for it to be added."
             )
         }
@@ -227,7 +227,7 @@ struct SetupView: View {
     private var steps: some View {
         VStack(alignment: .leading, spacing: 18) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Better Passwords").font(.title2.bold())
+                Text("Passwords Plus").font(.title2.bold())
                 Text("Unlock the browser extension with Touch ID instead of typing the code from your Mac.")
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -252,7 +252,7 @@ struct SetupView: View {
             Step(
                 number: 3,
                 title: "Allow reading the pairing code",
-                detail: "macOS calls this Accessibility. Better Passwords uses it only to read the code in "
+                detail: "macOS calls this Accessibility. Passwords Plus uses it only to read the code in "
                     + "Apple's own pairing window, and only after you confirm with Touch ID.",
                 done: model.accessibilityTrusted,
                 actionTitle: "Allow…"
@@ -282,7 +282,7 @@ struct SetupView: View {
     }
 
     private let browserRequest =
-        "https://github.com/fanckush/better-passwords-extension/issues/new?template=browser.yml"
+        "https://github.com/maxkss/better-passwords-extension/issues/new?template=browser.yml"
 
     /// Markdown: Step renders the link.
     private var browsersDetail: String {
@@ -296,7 +296,7 @@ struct SetupView: View {
 
     private var agentDetail: String {
         switch model.agentStatus {
-        case .requiresApproval: "Allow Better Passwords in System Settings → General → Login Items."
+        case .requiresApproval: "Allow Passwords Plus in System Settings → General → Login Items."
         default: "Starts by itself when the extension needs it, so this window doesn't need to stay open."
         }
     }
@@ -364,7 +364,7 @@ struct CompanionApp: App {
     @NSApplicationDelegateAdaptor private var delegate: AppDelegate
 
     var body: some Scene {
-        Window("Better Passwords", id: "setup") {
+        Window("Passwords Plus", id: "setup") {
             SetupView()
         }
         .windowResizability(.contentSize)

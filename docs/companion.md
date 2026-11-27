@@ -7,10 +7,10 @@ Touch ID can't replace the code in Apple's protocol: the code is the pairing pas
 ## Pieces
 
 ```
-extension ── sendNativeMessage ──► better-passwords-host      (launched by the browser)
+extension ── sendNativeMessage ──► passwords-plus-host      (launched by the browser)
                                         │ XPC, both sides check code signatures
                                         ▼
-                                   BetterPasswords --agent      (launched by launchd on demand)
+                                   PasswordsPlus --agent      (launched by launchd on demand)
                                         │ Touch ID, then Accessibility
                                         ▼
                                    Apple's helper window (the browser's own copy)
@@ -18,12 +18,12 @@ extension ── sendNativeMessage ──► better-passwords-host      (launche
 
 | Part                      | What it does                                                                                                                |
 | ------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `BetterPasswords` (setup) | The app you open. Connects your browsers (writes host manifests), turns on the agent, and asks for Accessibility.           |
-| `BetterPasswords --agent` | Same executable, started by launchd when the host connects. Holds the Accessibility permission. Quits after a quiet minute. |
-| `better-passwords-host`   | The native-messaging host the browser launches. No permissions; it only relays to the agent.                                |
+| `PasswordsPlus` (setup) | The app you open. Connects your browsers (writes host manifests), turns on the agent, and asks for Accessibility.           |
+| `PasswordsPlus --agent` | Same executable, started by launchd when the host connects. Holds the Accessibility permission. Quits after a quiet minute. |
+| `passwords-plus-host`   | The native-messaging host the browser launches. No permissions; it only relays to the agent.                                |
 | `CompanionCore`           | Everything testable: framing, code parsing, process checks, manifests.                                                      |
 
-The setup window and the agent are one executable with one signature. That's why the Accessibility permission you grant in setup also covers the agent, and why System Settings lists it as "Better Passwords".
+The setup window and the agent are one executable with one signature. That's why the Accessibility permission you grant in setup also covers the agent, and why System Settings lists it as "Passwords Plus".
 
 ## Why the agent can't be pointed at the wrong window
 
@@ -53,8 +53,8 @@ Sign local builds with an Apple Development certificate and install them in /App
 cd apps/companion
 swift test
 scripts/bundle.sh --sign "Apple Development: Your Name (XXXXXXXXXX)"
-ditto "dist/Better Passwords.app" "/Applications/Better Passwords.app" && rm -rf dist/*.app
-open "/Applications/Better Passwords.app"
+ditto "dist/Passwords Plus.app" "/Applications/Passwords Plus.app" && rm -rf dist/*.app
+open "/Applications/Passwords Plus.app"
 ```
 
 Why both:
@@ -66,12 +66,12 @@ In the window:
 
 1. Click **Connect**. This writes the bridge manifest (the same one as `scripts/setup-mac.sh`) and the companion's manifest for every installed browser.
 2. Click **Turn On** for the background agent. macOS may ask you to allow it in Login Items.
-3. Click **Allow…**, then turn on Better Passwords under Accessibility.
+3. Click **Allow…**, then turn on Passwords Plus under Accessibility.
 4. Optionally, click **Allow…** for Contacts. The extension then suggests the emails on your contact card ("Me") in email fields. They are read when the extension asks, kept in the extension's memory for ten minutes, and never stored.
 
 Reload the extension. Its popup now unlocks with Touch ID, and so does the inline menu ("Unlock with Touch ID").
 
-If the agent won't start, `launchctl print gui/$(id -u)/io.github.fanckush.betterpasswords.agent` shows why. "Launch Constraint Violation" in a crash report means a stale registration: click **Remove Setup**, then **Turn On** again. A rebuilt app also re-registers by itself when its window opens.
+If the agent won't start, `launchctl print gui/$(id -u)/io.github.maxkss.passwordsplus.agent` shows why. "Launch Constraint Violation" in a crash report means a stale registration: click **Remove Setup**, then **Turn On** again. A rebuilt app also re-registers by itself when its window opens.
 
 Signed releases: `scripts/bundle.sh --version 1.2.3 --sign "Developer ID Application: …"`, then notarize. See [release.md](release.md).
 

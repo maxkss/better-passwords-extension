@@ -8,8 +8,8 @@ let package = Package(
     name: "Companion",
     platforms: [.macOS(.v14)],
     products: [
-        .executable(name: "BetterPasswords", targets: ["BetterPasswords"]),
-        .executable(name: "better-passwords-host", targets: ["NativeHost"]),
+        .executable(name: "PasswordsPlus", targets: ["PasswordsPlus"]),
+        .executable(name: "passwords-plus-host", targets: ["NativeHost"]),
     ],
     dependencies: [
         // In-app updates. Only the app links it; the native host stays dependency-free.
@@ -20,7 +20,7 @@ let package = Package(
         .target(name: "CompanionCore"),
         // The menu-bar app; started with --agent by launchd, it is the background agent instead.
         .executableTarget(
-            name: "BetterPasswords",
+            name: "PasswordsPlus",
             dependencies: ["CompanionCore", .product(name: "Sparkle", package: "Sparkle")]),
         // The native-messaging host the browser launches. It only relays to the agent.
         .executableTarget(name: "NativeHost", dependencies: ["CompanionCore"]),

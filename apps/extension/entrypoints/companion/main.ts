@@ -46,7 +46,7 @@ async function render() {
   page.replaceChildren(
     h("img", { class: "app-icon", src: "/icon/128.png", alt: "" }),
     h("h1", { textContent: "Companion app for Mac" }),
-    h("p", { class: "lead", textContent: "Optional and free. It makes Better Passwords a little smoother." }),
+    h("p", { class: "lead", textContent: "Optional and free. It makes Passwords Plus a little smoother." }),
     h("h2", { textContent: "What it adds" }),
     h(
       "ul",

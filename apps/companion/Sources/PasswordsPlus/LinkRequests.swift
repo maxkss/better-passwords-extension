@@ -1,7 +1,7 @@
 import AppKit
 import Observation
 
-/// betterpasswords://connect, opened from the extension's welcome by someone who has the app: it
+/// passwordsplus://connect, opened from the extension's welcome by someone who has the app: it
 /// connects the browser that opened it. Any web page could open the link too, so it never does more
 /// than connect browsers, and it takes no parameters.
 @MainActor
@@ -27,7 +27,7 @@ final class LinkRequests {
 
     @objc private func handle(_ event: NSAppleEventDescriptor, reply _: NSAppleEventDescriptor) {
         guard let text = event.paramDescriptor(forKeyword: keyDirectObject)?.stringValue,
-            let url = URL(string: text), url.scheme == "betterpasswords", url.host == "connect"
+            let url = URL(string: text), url.scheme == "passwordsplus", url.host == "connect"
         else { return }
         let pid = event.attributeDescriptor(forKeyword: keySenderPIDAttr)?.int32Value
         latest = Request(sender: pid.flatMap { NSRunningApplication(processIdentifier: $0) })

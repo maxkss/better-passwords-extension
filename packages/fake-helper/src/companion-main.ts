@@ -20,7 +20,7 @@ function reply(message: { type?: string }) {
   if (message.type === "my-emails") {
     const emails = process.env.FAKE_COMPANION_EMAILS ?? "";
     if (emails === "needs-contacts") {
-      return { ok: false, version: 2, error: "needs-contacts", message: "Allow Contacts in Better Passwords." };
+      return { ok: false, version: 2, error: "needs-contacts", message: "Allow Contacts in Passwords Plus." };
     }
     return { ok: true, version: 2, emails: emails ? emails.split(",") : [] };
   }
@@ -28,7 +28,7 @@ function reply(message: { type?: string }) {
   if (result === "ok") return { ok: true, version: 1, code: process.env.FAKE_COMPANION_CODE ?? "123456" };
   const messages: Record<string, string> = {
     cancelled: "Touch ID was cancelled.",
-    "needs-accessibility": "Open Better Passwords and allow Accessibility.",
+    "needs-accessibility": "Open Passwords Plus and allow Accessibility.",
   };
   return { ok: false, version: 1, error: result, message: messages[result] ?? result };
 }

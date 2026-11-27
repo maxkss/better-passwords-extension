@@ -10,7 +10,7 @@ test.use({ setUp: false });
 test("says the browser is blocked instead of connected", async ({ context, popupUrl, runBlockedSetup }) => {
   const popup = await context.newPage();
   await popup.goto(popupUrl);
-  await expect(popup.getByRole("heading", { name: "Welcome to Better Passwords" })).toBeVisible();
+  await expect(popup.getByRole("heading", { name: "Welcome to Passwords Plus" })).toBeVisible();
 
   runBlockedSetup();
   await expect(popup.getByRole("heading", { name: /can't use Apple Passwords yet/ })).toBeVisible();

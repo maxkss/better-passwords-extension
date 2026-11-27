@@ -9,7 +9,7 @@ private func appcast(_ items: String) -> Data {
         <?xml version="1.0" encoding="utf-8"?>
         <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
           <channel>
-            <title>Better Passwords</title>
+            <title>Passwords Plus</title>
             \(items)
           </channel>
         </rss>

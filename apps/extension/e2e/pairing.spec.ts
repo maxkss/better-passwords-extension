@@ -95,11 +95,11 @@ test("suggests the companion app under the code box, until dismissed", async ({ 
 test("problems can be reported while unlocking and once unlocked", async ({ context, popupUrl }) => {
   const popup = await context.newPage();
   await popup.goto(popupUrl);
-  await expect(popup.getByRole("link", { name: "report it on GitHub" })).toBeVisible();
+  await expect(popup.getByRole("link", { name: "Report it on GitHub" })).toBeVisible();
 
   await popup.getByLabel("Verification code").fill(PAIRING_CODE);
   await expect(popup.getByText("Open a website to see its saved passwords.")).toBeVisible();
   // once unlocked, the way to report a problem is in Settings
   await popup.getByRole("button", { name: "Settings" }).click();
-  await expect(popup.getByRole("link", { name: "Email the developer" })).toHaveAttribute("href", /^mailto:/);
+  await expect(popup.getByRole("link", { name: "Report it on GitHub" })).toHaveAttribute("href", /\/issues\/new\?/);
 });

@@ -1,5 +1,5 @@
 #!/bin/sh
-# Builds "Better Passwords.app" into apps/companion/dist.
+# Builds "Passwords Plus.app" into apps/companion/dist.
 #
 # Usage: scripts/bundle.sh [--version X.Y.Z] [--sign "Developer ID Application: Name (TEAMID)"]
 #
@@ -25,23 +25,21 @@ done
 swift build -c release --arch arm64 --arch x86_64
 bin="$(swift build -c release --arch arm64 --arch x86_64 --show-bin-path)"
 
-app="dist/Better Passwords.app"
-host="$app/Contents/MacOS/better-passwords-host"
+app="dist/Passwords Plus.app"
+host="$app/Contents/MacOS/passwords-plus-host"
 rm -rf "$app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources" "$app/Contents/Library/LaunchAgents" "$app/Contents/Frameworks"
-cp "$bin/BetterPasswords" "$app/Contents/MacOS/"
-install_name_tool -add_rpath @executable_path/../Frameworks "$app/Contents/MacOS/BetterPasswords"
+cp "$bin/PasswordsPlus" "$app/Contents/MacOS/"
+install_name_tool -add_rpath @executable_path/../Frameworks "$app/Contents/MacOS/PasswordsPlus"
 sparkle="$app/Contents/Frameworks/Sparkle.framework"
 ditto "$bin/Sparkle.framework" "$sparkle"
 # Sparkle's XPC services are for sandboxed apps, which this one isn't
 rm -rf "$sparkle/XPCServices" "$sparkle/Versions/B/XPCServices"
-cp "$bin/better-passwords-host" "$host"
+cp "$bin/passwords-plus-host" "$host"
 cp Resources/Info.plist "$app/Contents/Info.plist"
-cp Resources/io.github.fanckush.betterpasswords.agent.plist "$app/Contents/Library/LaunchAgents/"
+cp Resources/io.github.maxkss.passwordsplus.agent.plist "$app/Contents/Library/LaunchAgents/"
 plutil -replace CFBundleShortVersionString -string "$version" "$app/Contents/Info.plist"
 plutil -replace CFBundleVersion -string "$version" "$app/Contents/Info.plist"
-# no appcast: a development build would offer to replace itself with the release
-if [ "$version" = "0.0.0" ]; then plutil -remove SUFeedURL "$app/Contents/Info.plist"; fi
 
 iconset="$(mktemp -d)/AppIcon.iconset"
 swift scripts/make-iconset.swift ../extension/assets/icon.svg "$iconset"
@@ -61,12 +59,12 @@ codesign "$@" "$sparkle"
 
 # The host before the app: an ad-hoc app pins the host's exact build, so its hash goes into
 # Info.plist before the app itself is signed.
-codesign "$@" --identifier io.github.fanckush.betterpasswords.companion.host "$host"
+codesign "$@" --identifier io.github.maxkss.passwordsplus.companion.host "$host"
 if [ "$identity" = "-" ]; then
     cdhash="$(codesign -dvvv "$host" 2>&1 | sed -n 's/^CDHash=//p')"
     plutil -insert BPHostCDHash -string "$cdhash" "$app/Contents/Info.plist"
 fi
-codesign "$@" --entitlements Resources/BetterPasswords.entitlements "$app"
+codesign "$@" --entitlements Resources/PasswordsPlus.entitlements "$app"
 codesign --verify --strict --deep "$app"
 
 echo "built $app ($version, signed: $identity)"

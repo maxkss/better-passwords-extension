@@ -20,10 +20,10 @@ version="${1:?usage: release.sh VERSION}"
 : "${NOTARY_ISSUER:?}"
 : "${SPARKLE_PRIVATE_KEY:?updates must be signed}"
 
-repo="https://github.com/fanckush/better-passwords-extension"
-app="dist/Better Passwords.app"
+repo="https://github.com/maxkss/better-passwords-extension"
+app="dist/Passwords Plus.app"
 updates="dist/updates"
-dmg="$updates/better-passwords-$version-mac.dmg"
+dmg="$updates/passwords-plus-$version-mac.dmg"
 
 notarize() {
     xcrun notarytool submit "$1" --key "$NOTARY_KEY_PATH" --key-id "$NOTARY_KEY_ID" --issuer "$NOTARY_ISSUER" --wait
@@ -53,21 +53,21 @@ spctl --assess --type execute --verbose "$app"
 rm -rf "$updates"
 mkdir -p "$updates"
 staging="$(mktemp -d)"
-ditto "$app" "$staging/Better Passwords.app"
+ditto "$app" "$staging/Passwords Plus.app"
 ln -s /Applications "$staging/Applications"
-hdiutil create -volname "Better Passwords" -srcfolder "$staging" -fs HFS+ -format UDZO "$dmg"
+hdiutil create -volname "Passwords Plus" -srcfolder "$staging" -fs HFS+ -format UDZO "$dmg"
 rm -rf "$staging"
 codesign --sign "$MACOS_SIGN_IDENTITY" --timestamp "$dmg"
 notarize "$dmg"
 staple "$dmg"
 spctl --assess --type open --context context:primary-signature --verbose "$dmg"
 
-# the appcast, one item: the site serves the newest release's copy (apps/site/worker.js)
+# the appcast, one item, for an app whose Info.plist has an SUFeedURL pointing at it
 printf '%s' "$SPARKLE_PRIVATE_KEY" | .build/artifacts/sparkle/Sparkle/bin/generate_appcast \
     --ed-key-file - \
     --download-url-prefix "$repo/releases/download/companion-v$version/" \
     --full-release-notes-url "$repo/releases/tag/companion-v$version" \
-    --link "https://betterpasswords.app/companion" \
+    --link "$repo" \
     "$updates"
 test -f "$updates/appcast.xml"
 

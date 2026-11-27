@@ -1,6 +1,6 @@
 # Architecture
 
-Better Passwords is a browser extension that reads logins from Apple Passwords (iCloud Keychain) on macOS and Windows. It doesn't store passwords and doesn't run a server: every request goes to Apple's own helper program, which ships with macOS 14 and later, and with iCloud for Windows.
+Passwords Plus is a browser extension that reads logins from Apple Passwords (iCloud Keychain) on macOS and Windows. It doesn't store passwords and doesn't run a server: every request goes to Apple's own helper program, which ships with macOS 14 and later, and with iCloud for Windows.
 
 ```
 popup · inline menu (our extension pages)      autofill content script (on login pages)
@@ -28,11 +28,11 @@ Apple Passwords / iCloud Keychain
 
 ## One identity, separate browser packages
 
-Better Passwords uses its own extension identity whether installed from a browser store or loaded unpacked from GitHub. Both use `io.github.fanckush.betterpasswords.bridge`, registered once by `scripts/setup-mac.sh` or the optional companion app. The manifest points at Apple's unmodified helper; the browser still launches that helper directly.
+Passwords Plus uses its own extension identity whether installed from a browser store or loaded unpacked from GitHub. Both use `io.github.maxkss.passwordsplus.bridge`, registered once by `scripts/setup-mac.sh` or the optional companion app. The manifest points at Apple's unmodified helper; the browser still launches that helper directly.
 
-macOS's preinstalled `com.apple.passwordmanager` manifest allows only Apple's extension IDs. Better Passwords does not reuse those IDs or alter Apple's registration, and can be installed alongside Apple's extension.
+macOS's preinstalled `com.apple.passwordmanager` manifest allows only Apple's extension IDs. Passwords Plus does not reuse those IDs or alter Apple's registration, and can be installed alongside Apple's extension.
 
-Chromium builds carry the Chrome Web Store's public key, so unpacked builds get the same extension ID as the store version. Firefox has its own add-on identity and manifest format. Build output lives in `chrome-mv3` and `firefox-mv2`; GitHub and store distribution do not select different runtime behavior. The companion host allows only Better Passwords' own browser identities.
+Chromium builds carry this fork's own public key, so every unpacked build gets the same extension ID. Firefox has its own add-on identity and manifest format. Build output lives in `chrome-mv3` and `firefox-mv2`; GitHub and store distribution do not select different runtime behavior. The companion host allows only Passwords Plus' own browser identities.
 
 ## Why the browser has to launch Apple's helper
 
@@ -40,11 +40,11 @@ The helper's code signature has *parent launch constraints*: macOS kills it unle
 
 ## First run
 
-Until the bridge is registered, connecting fails with the browser's "host not found", and the extension treats that as "not set up yet", not as an error. A fresh install that can't reach the helper opens `setup.html`; password fields offer "Set Up Better Passwords", which opens the same page; and the popup shows the same flow (`src/ui/setup.ts`). It offers the companion app or the setup command, retries the connection every 1.5 seconds while on screen, and says when it worked. That is said once, even if the popup closed while the user ran the command: the background remembers that setup was pending until the user sees it or unlocks. On Windows it offers the PowerShell command instead (there's no companion app). On anything else, it only says that a Mac or a PC is needed.
+Until the bridge is registered, connecting fails with the browser's "host not found", and the extension treats that as "not set up yet", not as an error. A fresh install that can't reach the helper opens `setup.html`; password fields offer "Set Up Passwords Plus", which opens the same page; and the popup shows the same flow (`src/ui/setup.ts`). It offers the companion app or the setup command, retries the connection every 1.5 seconds while on screen, and says when it worked. That is said once, even if the popup closed while the user ran the command: the background remembers that setup was pending until the user sees it or unlocks. On Windows it offers the PowerShell command instead (there's no companion app). On anything else, it only says that a Mac or a PC is needed.
 
 ## Windows
 
-iCloud for Windows (a Microsoft Store package) ships the same helper as `iCloudPasswordsExtensionHelper.exe`, and registers it as `com.apple.passwordmanager` for Apple's own extension IDs only. `scripts/setup-windows.ps1` writes our manifests to `%LOCALAPPDATA%\Better Passwords\` and registers them under `HKCU\Software\<browser>\NativeMessagingHosts`, pointing at the package's app execution alias (`%LOCALAPPDATA%\Microsoft\WindowsApps\iCloudPasswordsExtensionHelper.exe`). The package's own folder is renamed with each iCloud update; the alias isn't. Firefox refuses to start a host whose path is a link, which the alias is, so Firefox's manifest points at a one-line `.bat` next to it that starts the alias through `cmd.exe` (as Chromium does for every host).
+iCloud for Windows (a Microsoft Store package) ships the same helper as `iCloudPasswordsExtensionHelper.exe`, and registers it as `com.apple.passwordmanager` for Apple's own extension IDs only. `scripts/setup-windows.ps1` writes our manifests to `%LOCALAPPDATA%\Passwords Plus\` and registers them under `HKCU\Software\<browser>\NativeMessagingHosts`, pointing at the package's app execution alias (`%LOCALAPPDATA%\Microsoft\WindowsApps\iCloudPasswordsExtensionHelper.exe`). The package's own folder is renamed with each iCloud update; the alias isn't. Firefox refuses to start a host whose path is a link, which the alias is, so Firefox's manifest points at a one-line `.bat` next to it that starts the alias through `cmd.exe` (as Chromium does for every host).
 
 Windows has no launch constraints, so no browser is blocked. A helper that quits as it starts means iCloud for Windows was removed or its alias turned off, and the setup flow says that instead. The companion app is Mac only: off a Mac, it's never asked or offered (`unavailable` in `src/companion.ts`). Apple's Windows helper never asks for Windows Hello before giving out a password or a code, so on Windows the session ends when the PC locks unless the user turns that off (`defaultSettings` in `src/messages.ts`), and the code screens don't say "Confirm with Touch ID". What's different in the helper's protocol is in [protocol.md](protocol.md#windows).
 

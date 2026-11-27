@@ -91,7 +91,7 @@ describe("Session", () => {
     await expect(missing.connect()).rejects.toThrow();
     expect(missing.status.state).toBe("no-helper");
 
-    const firefoxMissing = failing("No such native application io.github.fanckush.betterpasswords.bridge");
+    const firefoxMissing = failing("No such native application io.github.maxkss.passwordsplus.bridge");
     await expect(firefoxMissing.connect()).rejects.toThrow();
     expect(firefoxMissing.status.state).toBe("no-helper");
 

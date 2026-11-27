@@ -48,7 +48,7 @@ export async function setupFlow(status: Status, options: SetupOptions): Promise<
   if (os === "other") {
     root.append(
       h("img", { class: "app-icon", src: "/icon/128.png", alt: "" }),
-      h("h1", { textContent: "Better Passwords needs a Mac or a PC" }),
+      h("h1", { textContent: "Passwords Plus needs a Mac or a PC" }),
       h("p", {
         class: "lead",
         textContent:
@@ -147,7 +147,7 @@ function showWelcome(root: HTMLElement, status: Status, options: SetupOptions) {
   show(
     root,
     h("img", { class: "app-icon", src: "/icon/128.png", alt: "" }),
-    h("h1", { textContent: repair ? "Let's reconnect" : "Welcome to Better Passwords" }),
+    h("h1", { textContent: repair ? "Let's reconnect" : "Welcome to Passwords Plus" }),
     h("p", {
       class: "lead",
       textContent: repair
@@ -190,7 +190,7 @@ async function showBlocked(root: HTMLElement, status: Status, options: SetupOpti
     h(
       "p",
       { class: "note" },
-      `Apple's own iCloud Passwords extension can't work here either. Once Apple approves ${who}, Better Passwords starts working the next time you open it.`,
+      `Apple's own iCloud Passwords extension can't work here either. Once Apple approves ${who}, Passwords Plus starts working the next time you open it.`,
     ),
     retryRoute(root, status, options, `${capitalized(who)} is still blocked by macOS.`),
     details(status.error),
@@ -283,7 +283,7 @@ function appRoute(act: (route: Route) => void, switchTo: (route: Route) => void)
   });
   download.addEventListener("click", () => act("app"));
   // someone adding another browser may have the app already; it connects the browser that opens it
-  const open = h("a", { href: COMPANION_CONNECT_URL, textContent: "Open Better Passwords" });
+  const open = h("a", { href: COMPANION_CONNECT_URL, textContent: "Open Passwords Plus" });
   open.addEventListener("click", (event) => {
     openCompanionLink(event);
     act("app");
