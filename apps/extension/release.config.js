@@ -14,6 +14,11 @@ export default {
         successCmd: 'echo "version=${nextRelease.version}" >> "$GITHUB_OUTPUT"',
       },
     ],
-    ["@semantic-release/github", { assets: [{ path: ".output/*.zip" }] }],
+    // no comments or labels on issues and PRs: the history from before the fork names PRs this
+    // repository doesn't have, and looking them up fails the release
+    [
+      "@semantic-release/github",
+      { assets: [{ path: ".output/*.zip" }], successComment: false, failComment: false, releasedLabels: false },
+    ],
   ],
 };
