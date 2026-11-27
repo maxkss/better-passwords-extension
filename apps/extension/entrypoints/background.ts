@@ -28,6 +28,7 @@ import {
 import { PortTransport } from "@/src/native/port-transport.ts";
 import {
   allowsSpecialCharacters,
+  generatePassphrase,
   generatePassword,
   PasswordRulesError,
   type Suggestion,
@@ -919,6 +920,14 @@ export default defineBackground(() => {
             passwords.alphanumeric = generatePassword("alphanumeric", rules);
           } catch (error) {
             // the site needs a special character: an alternative without would be turned down
+            if (!(error instanceof PasswordRulesError)) throw error;
+          }
+        }
+        if ((await getSettings()).passphrases) {
+          try {
+            passwords.passphrase = generatePassphrase(rules);
+          } catch (error) {
+            // too long for the site, or it won't take hyphens: the other suggestions stand
             if (!(error instanceof PasswordRulesError)) throw error;
           }
         }

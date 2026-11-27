@@ -6,6 +6,8 @@
 // background). An invalid or rejected form keeps the field, so nothing is asked.
 
 import { usernameNear } from "../fill.ts";
+import { senderOf } from "./buttons.ts";
+import { composedParent } from "./dom.ts";
 import { isNewPasswordField } from "./fields.ts";
 
 /** Whether the field is gone from the page or no longer shown. */
@@ -65,20 +67,16 @@ export function sentLogin(scope: ParentNode, fallbackUsername = ""): SentLogin |
 /**
  * What a click on `target`, or Enter in it, would send: its form, or for fields outside any form
  * the nearest element around it that has a password field (not the whole page: a cookie banner's
- * button is no sign-in). Undefined when the click isn't on a button.
+ * button is no sign-in). Undefined when the click isn't on a button that sends one: a button
+ * that signs in with another account (single sign-on) sends nothing of this form's.
  */
 export function submittedScope(target: EventTarget | null, key?: string): ParentNode | undefined {
   if (!(target instanceof Element)) return undefined;
-  const sender =
-    key === "Enter"
-      ? target instanceof HTMLInputElement
-        ? target
-        : undefined
-      : target.closest("button, input[type=submit], input[type=image], [role=button]");
+  const sender = key === "Enter" ? (target instanceof HTMLInputElement ? target : undefined) : senderOf(target);
   if (!sender) return undefined;
   const form = (sender as HTMLButtonElement | HTMLInputElement).form ?? sender.closest("form");
   if (form) return form;
-  for (let el = sender.parentElement; el && el !== el.ownerDocument.body; el = el.parentElement) {
+  for (let el = composedParent(sender); el && el !== el.ownerDocument.body; el = composedParent(el)) {
     if (el.querySelector("input[type=password]")) return el;
   }
   return undefined;

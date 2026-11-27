@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      body { font: 16px system-ui; padding: 40px; }
+      input { display: block; margin: 8px 0 16px; padding: 6px; width: 260px; }
+    </style>
+    <title>Test sign-in with hidden fields</title>
+  </head>
+  <body>
+    <!-- a sign-in with fields people can't see (bot traps, leftovers): they don't make it a sign-up -->
+    <form id="signin">
+      <input name="trap-user" autocomplete="username" style="position: absolute; left: -9999px" />
+      <input name="trap-pass" type="password" style="position: absolute; opacity: 0; width: 1px; height: 1px" />
+      <input name="old-pass" type="password" style="display: none" />
+      <label>Username <input id="user" name="username" autocomplete="username" /></label>
+      <label>Password <input id="pass" name="password" type="password" /></label>
+      <button type="submit">Sign in</button>
+    </form>
+  </body>
+</html>

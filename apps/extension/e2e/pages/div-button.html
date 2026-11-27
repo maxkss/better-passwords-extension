@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      body { font: 16px system-ui; padding: 40px; }
+      input { display: block; margin: 8px 0 16px; padding: 6px; width: 260px; }
+    </style>
+    <title>Test sign-in with a div button</title>
+    <style>
+      .button { display: inline-block; padding: 8px 16px; background: #0a84ff; color: white; cursor: pointer; }
+    </style>
+  </head>
+  <body>
+    <!-- no form and no button element: the "button" is a div the page's script listens to -->
+    <div id="box">
+      <label>Email <input id="user" type="email" autocomplete="username" /></label>
+      <label>Password <input id="pass" type="password" autocomplete="current-password" /></label>
+      <div id="go" class="button">Sign in</div>
+    </div>
+    <script>
+      document.getElementById("go").addEventListener("click", () => {
+        setTimeout(() => {
+          document.getElementById("box").replaceWith(Object.assign(document.createElement("p"), { textContent: "Welcome!" }));
+        }, 100);
+      });
+    </script>
+  </body>
+</html>

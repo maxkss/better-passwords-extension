@@ -38,5 +38,13 @@ website password requirements, under the MIT license:
   Copyright 2020 - 2026 Apple Inc.
   https://github.com/apple/password-manager-resources
 
+The word list in apps/extension/src/passwords/eff-large-wordlist.json, for passphrases, is the
+Electronic Frontier Foundation's large word list, under the Creative Commons Attribution 3.0
+United States license (https://creativecommons.org/licenses/by/3.0/us/):
+
+  EFF's Long Wordlist
+  Electronic Frontier Foundation
+  https://www.eff.org/dice
+
 Apple, iCloud and Apple Passwords are trademarks of Apple Inc. This project is not
 affiliated with or endorsed by Apple Inc.

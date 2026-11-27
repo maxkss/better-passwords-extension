@@ -1,7 +1,7 @@
 import "./style.css";
 import { DISPLAY_NAME } from "@/src/config.ts";
 import { requestHideMyEmailConsent } from "@/src/icloud/consent.ts";
-import type { EmailSuggestions, MenuMessage, OneTimeCodeView } from "@/src/messages.ts";
+import type { EmailSuggestions, MenuMessage, OneTimeCodeView, SuggestionStyle } from "@/src/messages.ts";
 import { bindToMenu, send } from "@/src/messages.ts";
 import type { Suggestion } from "@/src/passwords/generate.ts";
 import { computerName, platform } from "@/src/platform.ts";
@@ -325,7 +325,7 @@ async function showGenerate(error?: string) {
       openPasswordsRow(false),
     );
   }
-  const { strong, alphanumeric } = passwords;
+  const { strong, alphanumeric, passphrase } = passwords;
   render(
     // a form that doesn't say whose password this is (a reset): say who we'll save it for
     passwords.account ? message(`For ${passwords.account}`) : null,
@@ -337,6 +337,7 @@ async function showGenerate(error?: string) {
     ...(alphanumeric
       ? passwordRow("Without Special Characters", alphanumeric, () => void useGenerated("alphanumeric"))
       : []),
+    ...(passphrase ? passwordRow("Passphrase", passphrase, () => void useGenerated("passphrase")) : []),
     error ? message(error, true) : null,
     h("hr", { class: "separator" }),
     openPasswordsRow(false),
@@ -390,7 +391,7 @@ function passwordRow(title: string, { password, strength, limit }: Suggestion, o
 let notes = 0;
 
 /** Fills the password in now; Apple Passwords asks to save it when the form is submitted. */
-async function useGenerated(style: "strong" | "alphanumeric") {
+async function useGenerated(style: SuggestionStyle) {
   try {
     const { result } = await send({ type: "use-generated-password", nonce, style });
     // when filled, the content script closes the menu

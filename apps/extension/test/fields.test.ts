@@ -299,3 +299,76 @@ describe("maySignIn", () => {
     expect(maySignIn(el)).toBe(false);
   });
 });
+
+describe("Korean, single sign-on and hidden fields", () => {
+  it.each([
+    [
+      // the buttons for signing in with another account say "Sign in", but the form creates one
+      "sign-up with SSO buttons",
+      `<form><input type="email"><input id="f" type="password"><button>Create account</button><button type="button">Sign in with Google</button></form>`,
+      "new-password",
+    ],
+    [
+      "Korean username label",
+      `<form><label for="f">아이디</label><input id="f"><input type="password"></form>`,
+      "login",
+    ],
+    [
+      // "email address" is the username here, not a postal address
+      "Korean email address label",
+      `<form><label for="f">이메일 주소</label><input id="f"><input type="password"></form>`,
+      "login",
+    ],
+    [
+      "Korean sign-in's username step",
+      `<form><label for="f">아이디</label><input id="f" name="x1"><button>로그인</button></form>`,
+      "login",
+    ],
+    [
+      "Korean sign-up",
+      `<form><input type="email"><input id="f" type="password"><button>회원가입</button></form>`,
+      "new-password",
+    ],
+    [
+      "Korean verification code",
+      `<form><label for="f">인증번호</label><input id="f" maxlength="6"></form>`,
+      "one-time-code",
+    ],
+    [
+      // a field nobody sees (a leftover, a trap for bots) is no confirmation
+      "sign-in with a hidden second password",
+      `<form><input type="email"><input id="f" type="password"><input type="password" style="display: none"><button>Sign in</button></form>`,
+      "login",
+    ],
+  ])("reads a %s", (_, html, kind) => {
+    expect(fieldKind(field(html))).toBe(kind);
+  });
+
+  it.each([
+    [
+      // "사용자 이름" is a username, not the person's name: no sign-up
+      "Korean username named for a user",
+      `<form><label for="f">사용자 이름</label><input id="f"><input id="p" type="password"><button>로그인</button></form>`,
+      "#p",
+      "login",
+    ],
+    [
+      "Korean sign-in with a sign-up link",
+      `<form><input type="text" name="id"><input id="f" type="password"><button>로그인</button><button type="button">회원가입</button></form>`,
+      "#f",
+      "login",
+    ],
+  ])("keeps a %s a sign-in", (_, html, selector, kind) => {
+    expect(fieldKind(field(html, selector))).toBe(kind);
+  });
+
+  it.each([
+    [
+      "Korean code sent by text message",
+      `<form><label for="f">휴대폰 인증번호</label><input id="f" maxlength="6"></form>`,
+    ],
+    ["Korean search box", `<form><input id="f" type="email" placeholder="이메일 검색"></form>`],
+  ])("ignores a %s", (_, html) => {
+    expect(fieldKind(field(html))).toBeUndefined();
+  });
+});

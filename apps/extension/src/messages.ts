@@ -36,7 +36,7 @@ export type Request =
   /** Fresh passwords for the new-password field the menu was opened on, as strong as its rules allow. */
   | { type: "generate-passwords"; nonce: string }
   /** Fills the chosen password; Apple Passwords is asked to save it when the form is submitted. */
-  | { type: "use-generated-password"; nonce: string; style: PasswordStyle }
+  | { type: "use-generated-password"; nonce: string; style: SuggestionStyle }
   // Hide My Email, on email fields (the menu is bound to its tab)
   /** `logins`: the site's saved logins too (an email field that may sign in). */
   | { type: "email-suggestions"; nonce: string; logins?: boolean }
@@ -103,6 +103,8 @@ export interface Settings {
   oneTimeCodes: boolean;
   /** Suggestions when signing up: strong passwords, and the user's emails in email fields. */
   generatePasswords: boolean;
+  /** Suggest a passphrase too (words, easier to type) along with the strong password. */
+  passphrases: boolean;
   /** Offer Hide My Email addresses on email fields (opt-in: uses icloud.com's web service). */
   hideMyEmail: boolean;
   /** Advertise Hide My Email in email fields until the user turns it on or dismisses it. */
@@ -121,6 +123,7 @@ export const DEFAULT_SETTINGS: Settings = {
   oneTimeCodes: true,
   touchId: true,
   generatePasswords: true,
+  passphrases: false,
   hideMyEmail: false,
   hideMyEmailHint: true,
   companionEmailsHint: true,
@@ -186,10 +189,15 @@ export interface AutofillStatus {
   orGenerate?: boolean;
 }
 
+/** Which of the suggested passwords: see GeneratedPasswords. */
+export type SuggestionStyle = PasswordStyle | "passphrase";
+
 export interface GeneratedPasswords {
   strong: Suggestion;
   /** Left out when the site's rules need a special character, or the strong one has none anyway. */
   alphanumeric?: Suggestion;
+  /** Only when the user asked for passphrases, and the site's rules take one. */
+  passphrase?: Suggestion;
   /**
    * The account they'd be saved for when the form has no username (a password reset): the login
    * just chosen on this site, or its only one. macOS's save prompt has the final say.

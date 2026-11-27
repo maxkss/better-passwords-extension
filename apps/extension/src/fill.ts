@@ -1,3 +1,4 @@
+import { rootOf } from "./autofill/dom.ts";
 import { isNewPasswordField, isOneTimeCodeField, mayTakeNewPassword, oneTimeCodeGroup } from "./autofill/fields.ts";
 import type { FieldRules } from "./passwords/generate.ts";
 
@@ -27,6 +28,8 @@ export function fillCredentials(
     if (el.disabled || el.readOnly || el.type === "hidden") return false;
     const rect = el.getBoundingClientRect();
     if (rect.width < 2 || rect.height < 2) return false;
+    // pushed off the page's left or top edge: a trap for bots, which nobody can scroll to
+    if (rect.right + window.scrollX <= 0 || rect.bottom + window.scrollY <= 0) return false;
     const style = window.getComputedStyle(el);
     const opacity = Number.parseFloat(style.opacity);
     return style.visibility !== "hidden" && style.display !== "none" && !(opacity <= 0.05);
@@ -41,12 +44,17 @@ export function fillCredentials(
     el.dispatchEvent(new Event("change", { bubbles: true }));
   };
 
-  const inputs = Array.from(document.querySelectorAll("input")).filter(isVisible);
+  // the focused field, inside shadow roots too (the page sees only an open one's host)
+  let focused = document.activeElement;
+  while (focused?.shadowRoot?.activeElement) focused = focused.shadowRoot.activeElement;
+  const active = anchor ?? (focused instanceof HTMLInputElement ? focused : undefined);
+  // the fields around it: of the shadow root it's in, if it's in one
+  const root = active?.getRootNode();
+  const inputs = Array.from((root instanceof ShadowRoot ? root : document).querySelectorAll("input")).filter(isVisible);
   const isUsernameField = (el: HTMLInputElement) =>
     ["text", "email", "tel", ""].includes(el.type) &&
     !/one-time-code|new-password|current-password/.test(el.autocomplete);
 
-  const active = anchor ?? (document.activeElement instanceof HTMLInputElement ? document.activeElement : undefined);
   // a field inside a form only pairs with fields of that same form
   const activeForm = active?.form;
   const passwordField =
@@ -70,8 +78,10 @@ export function fillCredentials(
   if (usernameField && username) setValue(usernameField, username);
   if (passwordField && password !== null) setValue(passwordField, password);
   // leave the filled fields unfocused: the login is ready, and there's nothing left to type
-  const focused = document.activeElement;
-  if (focused instanceof HTMLElement && (focused === passwordField || focused === usernameField)) focused.blur();
+  const stillFocused = (passwordField ?? usernameField)?.getRootNode();
+  const last =
+    stillFocused instanceof ShadowRoot || stillFocused instanceof Document ? stillFocused.activeElement : null;
+  if (last instanceof HTMLElement && (last === passwordField || last === usernameField)) last.blur();
   return "filled";
 }
 
@@ -89,7 +99,7 @@ export function fillNewPassword(expectedOrigin: string, password: string, anchor
 
 /** The fields a new password goes into: the one the menu is on, and the others of its form (a confirmation). */
 export function newPasswordTargets(anchor: HTMLInputElement): HTMLInputElement[] {
-  const scope = anchor.form ?? document;
+  const scope = anchor.form ?? rootOf(anchor);
   return Array.from(scope.querySelectorAll("input")).filter(
     (el) => el === anchor || (isNewPasswordField(el) && isFillable(el)),
   );
@@ -182,7 +192,7 @@ export function asksForUsername(anchor: HTMLInputElement): boolean {
 }
 
 function usernameFieldsNear(anchor: HTMLInputElement): HTMLInputElement[] {
-  const scope = anchor.form ?? document;
+  const scope = anchor.form ?? rootOf(anchor);
   return Array.from(scope.querySelectorAll("input")).filter(
     (el) => ["text", "email", "tel", ""].includes(el.type) && isFillable(el) && usernameScore(el) > 0,
   );
@@ -200,6 +210,7 @@ function isFillable(el: HTMLInputElement): boolean {
   if (el.disabled || el.readOnly || el.type === "hidden") return false;
   const rect = el.getBoundingClientRect();
   if (rect.width < 2 || rect.height < 2) return false;
+  if (rect.right + window.scrollX <= 0 || rect.bottom + window.scrollY <= 0) return false;
   const style = window.getComputedStyle(el);
   return style.visibility !== "hidden" && style.display !== "none" && !(Number.parseFloat(style.opacity) <= 0.05);
 }

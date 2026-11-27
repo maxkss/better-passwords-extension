@@ -3,26 +3,37 @@
 // form, would be wrong. Any other email field (a newsletter, a contact form) gets email suggestions.
 // A field asking for a sign-in's verification code gets the codes saved in Apple Passwords.
 
+import { ownButtonLabels } from "./buttons.ts";
+import { composedParent, isShown, rootOf } from "./dom.ts";
+
 /**
  * "login": fill a saved login. "new-password": suggest a strong password. "email": suggest an email.
  * "one-time-code": fill a verification code.
  */
 export type FieldKind = "login" | "new-password" | "email" | "one-time-code";
 
-const USERNAME_HINT = /user|login|e-?mail|account|identifier|signin/i;
+const USERNAME_HINT = /user|login|e-?mail|account|identifier|signin|아이디|이메일|계정|사용자/i;
 /** A whole name or id for the account, not just an email (a forgot-password form's `name="username"`). */
 const ACCOUNT_NAME = /^(user([_-]?(name|id))?|login([_-]?(name|id))?|identifier|sign[_-]?in)$/i;
-const EMAIL_HINT = /e-?mail/i;
-const SIGNUP_HINT = /sign[\s_-]?up|regist|create[\s_-]?(an[\s_-]?)?account|join|enrol/i;
-const LOGIN_HINT = /sign[\s_-]?in|log[\s_-]?in/i;
+/** A label naming the account where the field's name doesn't (Korean sites rarely name it). */
+const ACCOUNT_LABEL = /^\s*(아이디|사용자\s*(이름|ID)|ID)\s*$/i;
+const EMAIL_HINT = /e-?mail|이메일/i;
+const SIGNUP_HINT =
+  /sign[\s_-]?up|regist|create[\s_-]?(an[\s_-]?)?account|join|enrol|회원\s*가입|가입하기|계정\s*(만들기|생성)/i;
+const LOGIN_HINT = /sign[\s_-]?in|log[\s_-]?in|로그인/i;
 /** A sign-in's password is never optional. */
-const OPTIONAL_HINT = /optional|facultati|opcional|opzionale/i;
-/** A field for the person's name, which only a sign-up asks for. Not "username". */
-const PERSON_NAME = /(full|first|last|given|family|sur|fore)[\s_-]?name|vorname|nachname|pr[ée]nom/i;
+const OPTIONAL_HINT = /optional|facultati|opcional|opzionale|선택\s*사항|\(선택\)/i;
+/** A field for the person's name, which only a sign-up asks for. Not "username" ("사용자 이름"). */
+const PERSON_NAME =
+  /(full|first|last|given|family|sur|fore)[\s_-]?name|vorname|nachname|pr[ée]nom|(?<!사용자\s*)이름|성명|성함/i;
 /** A newsletter's sign-up: an email field that never signs in. */
-const NEWSLETTER_HINT = /newsletter|subscri|abonn/i;
+const NEWSLETTER_HINT = /newsletter|subscri|abonn|뉴스레터|구독/i;
 /** A link to reset a forgotten password: the page signs in. */
-const PASSWORD_RESET = /forg[eo]t|reset|vergessen|oubli|olvid/i;
+const PASSWORD_RESET = /forg[eo]t|reset|vergessen|oubli|olvid|(비밀번호|아이디)\s*(찾기|재설정)/i;
+
+function labelText(el: HTMLInputElement): string {
+  return Array.from(el.labels ?? [], (label) => label.textContent ?? "").join(" ");
+}
 
 function textOf(el: HTMLInputElement): string {
   // the label too: some fields say what they are nowhere else (no name, a generated id)
@@ -41,17 +52,17 @@ function asksForEmail(el: HTMLInputElement): boolean {
  */
 function isSearchBox(el: HTMLInputElement): boolean {
   if (/search/.test(el.autocomplete.toLowerCase()) || el.getAttribute("role") === "searchbox") return true;
-  return el.closest("search, [role=search]") !== null || /search/i.test(textOf(el));
+  return el.closest("search, [role=search]") !== null || /search|검색/i.test(textOf(el));
 }
 
 /** Says it wants a sign-in's verification code, whatever the field looks like. */
 const CODE_LABEL =
-  /one[\s_-]?time|(?<![a-z])(t?otp|2fa|mfa)(?![a-z])|two[\s_-]?(factor|step)|2[\s_-]?step|verification|authenticat(ion|or)|security[\s_-]?code|passcode/i;
+  /one[\s_-]?time|(?<![a-z])(t?otp|2fa|mfa)(?![a-z])|two[\s_-]?(factor|step)|2[\s_-]?step|verification|authenticat(ion|or)|security[\s_-]?code|passcode|인증\s*(번호|코드)|일회용|보안\s*코드|2단계/i;
 /** Might be a verification code, if the field also takes a short number. Names use _ and - too. */
-const MAYBE_CODE_LABEL = /(?<![a-z])code(?![a-z])|verify|token/i;
+const MAYBE_CODE_LABEL = /(?<![a-z])code(?![a-z])|verify|token|코드|인증/i;
 /** Codes of other kinds: payment cards, addresses, phones, offers, captchas, recovery codes. */
 const NOT_CODE_LABEL =
-  /card|cvc|cvv|csc|post(al)?[\s_-]?code|zip|phone|mobile|promo|coupon|voucher|gift|referral|invit|discount|area[\s_-]?code|country|captcha|recovery|backup/i;
+  /card|cvc|cvv|csc|post(al)?[\s_-]?code|zip|phone|mobile|promo|coupon|voucher|gift|referral|invit|discount|area[\s_-]?code|country|captcha|recovery|backup|카드|우편|휴대폰|전화|쿠폰|추천|초대|할인|복구|자동입력\s*방지/i;
 
 /** Inputs a code goes into: text-like, or typed as a number. */
 function takesCode(el: HTMLInputElement): boolean {
@@ -78,8 +89,9 @@ function pageAsksForCode(doc: Document): boolean {
 
 /** On a payment form any short code is a card's (its CVC), never a sign-in's. */
 function inPaymentForm(el: HTMLInputElement): boolean {
-  const scope = el.form ?? el.ownerDocument;
-  return Array.from(scope.querySelectorAll("input")).some((input) => /\bcc-/.test(input.autocomplete.toLowerCase()));
+  return Array.from(scopeOf(el).querySelectorAll("input")).some((input) =>
+    /\bcc-/.test(input.autocomplete.toLowerCase()),
+  );
 }
 
 /**
@@ -119,18 +131,28 @@ function tokens(el: HTMLInputElement): string[] {
   return el.autocomplete.toLowerCase().split(/\s+/);
 }
 
-function passwordFields(scope: ParentNode): HTMLInputElement[] {
-  return Array.from(scope.querySelectorAll("input")).filter((input) => input.type === "password");
+/** Where the fields filled along with `el` are: its form, or the document or shadow root it's in. */
+function scopeOf(el: HTMLInputElement): ParentNode {
+  return el.form ?? rootOf(el);
+}
+
+/**
+ * The password fields in `scope` someone can see (and `el`, the field being asked about): fields
+ * nobody can see are traps or leftovers, and would make a sign-in look like a sign-up.
+ */
+function passwordFields(scope: ParentNode, el?: HTMLInputElement): HTMLInputElement[] {
+  return Array.from(scope.querySelectorAll("input")).filter(
+    (input) => input.type === "password" && (input === el || isShown(input)),
+  );
 }
 
 function ownText(form: HTMLFormElement): string {
   return [form.id, form.name, form.getAttribute("action") ?? "", form.className].join(" ");
 }
 
+/** What the form's own buttons say: not "Sign in with Google", which is about another account. */
 function buttonText(form: HTMLFormElement): string {
-  return Array.from(form.querySelectorAll<HTMLElement>("button, input[type=submit]"))
-    .map((b) => (b instanceof HTMLInputElement ? b.value : (b.textContent ?? "")))
-    .join(" ");
+  return ownButtonLabels(form);
 }
 
 /** A form that creates an account, judged by its own attributes and its submit buttons. */
@@ -151,9 +173,9 @@ function looksLikeLogin(form: HTMLFormElement | null): boolean {
  * around it holding another field (not the whole page: a profile's name fields are no sign-up).
  */
 function fieldsAround(el: HTMLInputElement): HTMLInputElement[] {
-  if (el.form) return Array.from(el.form.querySelectorAll("input"));
-  for (let scope = el.parentElement; scope && scope !== el.ownerDocument.body; scope = scope.parentElement) {
-    const inputs = Array.from(scope.querySelectorAll("input")).filter((input) => input.type !== "hidden");
+  if (el.form) return Array.from(el.form.querySelectorAll("input")).filter((input) => input === el || isShown(input));
+  for (let scope = composedParent(el); scope && scope !== el.ownerDocument.body; scope = composedParent(scope)) {
+    const inputs = Array.from(scope.querySelectorAll("input")).filter((input) => input === el || isShown(input));
     if (inputs.length > 1) return inputs;
   }
   return [el];
@@ -172,8 +194,7 @@ export function isNewPasswordField(el: HTMLInputElement): boolean {
   const autocomplete = tokens(el);
   if (autocomplete.includes("new-password")) return true;
   if (autocomplete.includes("current-password")) return false;
-  const scope = el.form ?? el.ownerDocument;
-  const all = passwordFields(scope);
+  const all = passwordFields(scopeOf(el), el);
   const marked = all.some((input) => tokens(input).includes("current-password"));
   // two password fields: password and confirmation; three: current, new and confirmation
   if (all.length === 2 && !marked) return true;
@@ -187,10 +208,10 @@ export function isPasswordField(el: HTMLInputElement): boolean {
   return el.type === "password" && !isNewPasswordField(el);
 }
 
-/** The page links to resetting a forgotten password, as sign-in pages do. */
-function offersPasswordReset(doc: Document): boolean {
-  return Array.from(doc.querySelectorAll<HTMLElement>("a, button")).some((el) =>
-    PASSWORD_RESET.test(el.textContent ?? ""),
+/** The page (or the shadow root around `field`) links to resetting a forgotten password, as sign-ins do. */
+function offersPasswordReset(field: HTMLInputElement): boolean {
+  return [...new Set<ParentNode>([rootOf(field), field.ownerDocument])].some((root) =>
+    Array.from(root.querySelectorAll<HTMLElement>("a, button")).some((el) => PASSWORD_RESET.test(el.textContent ?? "")),
   );
 }
 
@@ -201,7 +222,7 @@ function offersPasswordReset(doc: Document): boolean {
  */
 export function isUnsurePasswordField(el: HTMLInputElement): boolean {
   if (!isPasswordField(el) || tokens(el).includes("current-password")) return false;
-  return !looksLikeLogin(el.form) && !offersPasswordReset(el.ownerDocument);
+  return !looksLikeLogin(el.form) && !offersPasswordReset(el);
 }
 
 /** A password field a new password may go into: a sign-up's, or one that might be. */
@@ -210,8 +231,7 @@ export function mayTakeNewPassword(el: HTMLInputElement): boolean {
 }
 
 function inSignupForm(el: HTMLInputElement): boolean {
-  const scope = el.form ?? el.ownerDocument;
-  return passwordFields(scope).some(isNewPasswordField) || looksLikeSignup(el.form);
+  return passwordFields(scopeOf(el)).some(isNewPasswordField) || looksLikeSignup(el.form);
 }
 
 /**
@@ -226,8 +246,7 @@ export function maySignIn(el: HTMLInputElement): boolean {
 }
 
 function hasPasswordFieldNearby(el: HTMLInputElement): boolean {
-  const scope = el.form ?? el.ownerDocument;
-  return passwordFields(scope).some((input) => isPasswordField(input));
+  return passwordFields(scopeOf(el)).some((input) => isPasswordField(input));
 }
 
 function isEmailLike(el: HTMLInputElement): boolean {
@@ -247,7 +266,7 @@ export function isUsernameField(el: HTMLInputElement): boolean {
   if (!hasPasswordFieldNearby(el)) {
     // the whole name or id only: "user[first_name]" or a label saying "Username" is no account field
     if (ACCOUNT_NAME.test(el.name) || ACCOUNT_NAME.test(el.id)) return true;
-    return isEmailLike(el) && looksLikeLogin(el.form);
+    return (isEmailLike(el) || ACCOUNT_LABEL.test(labelText(el))) && looksLikeLogin(el.form);
   }
   return autocomplete.includes("email") || asksForEmail(el) || USERNAME_HINT.test(textOf(el));
 }
