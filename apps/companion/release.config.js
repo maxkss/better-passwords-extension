@@ -1,6 +1,6 @@
 // Releases the Mac companion app from commits scoped (companion) on main
-// (see scripts/release/component-commits.js). CI runs this only once Developer ID signing is set
-// up, because Gatekeeper blocks an unsigned download.
+// (see scripts/release/component-commits.js). Without Developer ID secrets the disk image is ad hoc
+// signed and not notarized (see scripts/release.sh).
 export default {
   branches: ["main"],
   tagFormat: "companion-v${version}",
@@ -13,6 +13,15 @@ export default {
         successCmd: 'echo "version=${nextRelease.version}" >> "$GITHUB_OUTPUT"',
       },
     ],
-    ["@semantic-release/github", { assets: [{ path: "dist/updates/*.dmg" }, { path: "dist/updates/appcast.xml" }] }],
+    [
+      "@semantic-release/github",
+      {
+        assets: [{ path: "dist/updates/*.dmg" }, { path: "dist/updates/appcast.xml" }],
+        // as for the extension (apps/extension/release.config.js)
+        successComment: false,
+        failComment: false,
+        releasedLabels: false,
+      },
+    ],
   ],
 };
