@@ -48,7 +48,11 @@ xcrun actool ../extension/assets/AppIcon.icon --compile "$app/Contents/Resources
     --platform macosx --minimum-deployment-target 14.0 --app-icon AppIcon \
     --output-partial-info-plist "$partial/icon.plist" --errors --warnings >/dev/null
 rm -rf "$partial"
-test -f "$app/Contents/Resources/AppIcon.icns" && test -f "$app/Contents/Resources/Assets.car"
+# actool before Xcode 26 skips an .icon without a word, so check it wrote both (one test per line:
+# set -e ignores a failure on the left of &&)
+for icon in AppIcon.icns Assets.car; do
+    test -f "$app/Contents/Resources/$icon" || { echo "actool wrote no $icon: Icon Composer icons need Xcode 26 or later" >&2; exit 1; }
+done
 
 if [ "$identity" = "-" ]; then
     set -- --force --sign - --timestamp=none
