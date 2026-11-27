@@ -590,3 +590,26 @@ button.link:disabled {
 .list > .row:not([hidden]) ~ .row .body {
   border-top: 1px solid var(--cell-separator);
 }
+
+/* a row's value picked from a menu, as the kit's pop-up button: the value and a chevron */
+.picker {
+  appearance: none;
+  flex: none;
+  max-width: 50%;
+  margin: 0;
+  padding: 0 14px 0 4px;
+  border: 0;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='12' viewBox='0 0 8 12'%3E%3Cpath d='M1 4.5 4 1.5l3 3M1 7.5l3 3 3-3' fill='none' stroke='%238e8e93' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+    right center / 8px 12px no-repeat;
+  color: var(--label-2);
+  font: inherit;
+  text-align: right;
+  cursor: pointer;
+}
+
+.picker:focus-visible {
+  outline: 1.5px solid var(--accent);
+  outline-offset: 1.5px;
+  border-radius: 4px;
+}

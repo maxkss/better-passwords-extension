@@ -2,6 +2,7 @@ import "./style.css";
 import { DISPLAY_NAME } from "@/src/config.ts";
 import { requestHideMyEmailConsent } from "@/src/icloud/consent.ts";
 import { type LoginsResult, type OneTimeCodesResult, type Settings, type Status, send } from "@/src/messages.ts";
+import { MAX_WORDS, MIN_WORDS } from "@/src/passwords/passphrase-options.ts";
 import { computerName, platform } from "@/src/platform.ts";
 import { applySystemAccent } from "@/src/ui/accent.ts";
 import { bindCodeInput } from "@/src/ui/code-input.ts";
@@ -579,7 +580,20 @@ async function fill(tabId: number, username: string) {
 
 // --- settings ------------------------------------------------------------------------------------
 
-type Option = (key: keyof Settings, label: string, detail?: string, disabled?: boolean) => HTMLElement;
+/** The settings that are on or off. */
+type Switch = { [K in keyof Settings]: Settings[K] extends boolean ? K : never }[keyof Settings];
+
+type Option = (key: Switch, label: string, detail?: string, disabled?: boolean) => HTMLElement;
+
+/** What can go between a passphrase's words, and what each is called. */
+const SEPARATORS: [string, string][] = [
+  ["-", "Hyphen"],
+  [".", "Period"],
+  ["_", "Underscore"],
+  [",", "Comma"],
+  [" ", "Space"],
+  ["", "Nothing"],
+];
 
 async function showSettings(status: Status) {
   let settings: Settings;
@@ -603,6 +617,8 @@ async function showSettings(status: Status) {
           return;
         }
         await send({ type: "set-settings", settings: { [key]: toggle.checked } });
+        // the passphrase's own settings show only while passphrases are on
+        if (key === "passphrases") await showSettings(status);
       } catch (error) {
         toggle.checked = settings[key];
         await refresh(messageOf(error));
@@ -634,6 +650,7 @@ async function showSettings(status: Status) {
         option("passphrases", "Passphrases too", "Words that are easier to type"),
         option("hideMyEmail", "Hide My Email", "iCloud+ addresses for each site"),
       ),
+      settings.passphrases ? passphraseSection(settings, option) : null,
       // Firefox's idle API never reports "locked", so the option would do nothing there
       import.meta.env.FIREFOX
         ? null
@@ -646,6 +663,49 @@ async function showSettings(status: Status) {
       // the companion app is Mac only; elsewhere there's nothing to offer
       status.companion === "unavailable" ? null : macAppSection(status, option),
       reportProblem(),
+    ),
+  );
+}
+
+/** A row whose value is picked from a menu, saved as soon as it changes. */
+function picker(label: string, value: string, choices: [string, string][], save: (value: string) => Promise<unknown>) {
+  const select = h("select", { class: "picker" });
+  select.setAttribute("aria-label", label);
+  for (const [choice, name] of choices) {
+    select.append(h("option", { value: choice, textContent: name, selected: choice === value }));
+  }
+  select.addEventListener("change", async () => {
+    try {
+      await save(select.value);
+    } catch (error) {
+      select.value = value;
+      await refresh(messageOf(error));
+    }
+  });
+  return row({ as: "label", title: label, trailing: select });
+}
+
+/** How passphrases are made: how many words, what goes between them, a capital and a number. */
+function passphraseSection(settings: Settings, option: Option) {
+  const save = (changes: Partial<Settings>) => send({ type: "set-settings", settings: changes });
+  const words = Array.from({ length: MAX_WORDS - MIN_WORDS + 1 }, (_, i): [string, string] => {
+    const count = String(MIN_WORDS + i);
+    return [count, count];
+  });
+  // a separator set some other way (an older version, say) stays choosable
+  const separator = settings.passphraseSeparator;
+  const separators: [string, string][] = SEPARATORS.some(([value]) => value === separator)
+    ? SEPARATORS
+    : [...SEPARATORS, [separator, `“${separator}”`]];
+  return h(
+    "section",
+    {},
+    sectionTitle("Passphrases"),
+    list(
+      picker("Words", String(settings.passphraseWords), words, (value) => save({ passphraseWords: Number(value) })),
+      picker("Between words", separator, separators, (value) => save({ passphraseSeparator: value })),
+      option("passphraseCapital", "Capital letter", "In one word"),
+      option("passphraseDigit", "Number", "After one word"),
     ),
   );
 }
