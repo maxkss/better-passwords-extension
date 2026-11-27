@@ -329,15 +329,24 @@ async function showGenerate(error?: string) {
   render(
     // a form that doesn't say whose password this is (a reset): say who we'll save it for
     passwords.account ? message(`For ${passwords.account}`) : null,
-    ...passwordRow(
-      strong.strength === "strong" ? "Strong Password" : "Suggested Password",
-      strong,
-      () => void useGenerated("strong"),
-    ),
+    // the passphrase the user chose in Settings, or Apple's kind of password and its alternative
+    ...(passphrase
+      ? passwordRow(
+          passphrase.strength === "strong" ? "Strong Passphrase" : "Suggested Passphrase",
+          passphrase,
+          () => void useGenerated("passphrase"),
+        )
+      : []),
+    ...(strong
+      ? passwordRow(
+          strong.strength === "strong" ? "Strong Password" : "Suggested Password",
+          strong,
+          () => void useGenerated("strong"),
+        )
+      : []),
     ...(alphanumeric
       ? passwordRow("Without Special Characters", alphanumeric, () => void useGenerated("alphanumeric"))
       : []),
-    ...(passphrase ? passwordRow("Passphrase", passphrase, () => void useGenerated("passphrase")) : []),
     error ? message(error, true) : null,
     h("hr", { class: "separator" }),
     openPasswordsRow(false),

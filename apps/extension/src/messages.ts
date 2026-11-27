@@ -28,6 +28,8 @@ export type Request =
   | { type: "install-update" }
   | { type: "get-settings" }
   | { type: "set-settings"; settings: Partial<Settings> }
+  /** A passphrase made as the settings say, for the popup to show what they make. */
+  | { type: "sample-passphrase" }
   // inline menu → background → content script of the same tab
   | { type: "fill-from-menu"; nonce: string; username: string }
   | { type: "fill-one-time-code-from-menu"; nonce: string; id: string }
@@ -104,8 +106,8 @@ export interface Settings {
   oneTimeCodes: boolean;
   /** Suggestions when signing up: strong passwords, and the user's emails in email fields. */
   generatePasswords: boolean;
-  /** Suggest a passphrase too (words, easier to type) along with the strong password. */
-  passphrases: boolean;
+  /** What a sign-up is offered: Apple's kind of strong password, or a passphrase. */
+  passwordStyle: PasswordStyleSetting;
   /** How many words a passphrase has (see PassphraseOptions). */
   passphraseWords: number;
   /** What goes between a passphrase's words. */
@@ -132,7 +134,7 @@ export const DEFAULT_SETTINGS: Settings = {
   oneTimeCodes: true,
   touchId: true,
   generatePasswords: true,
-  passphrases: false,
+  passwordStyle: "apple",
   passphraseWords: PASSPHRASE_DEFAULTS.words,
   passphraseSeparator: PASSPHRASE_DEFAULTS.separator,
   passphraseCapital: PASSPHRASE_DEFAULTS.capital,
@@ -143,6 +145,20 @@ export const DEFAULT_SETTINGS: Settings = {
   suggestEmails: true,
   companionCodeHint: true,
 };
+
+/** "apple": like Apple's (xxxxxx-xxxxxx-xxxxxx), "passphrase": words, made as the settings say. */
+export type PasswordStyleSetting = "apple" | "passphrase";
+
+/**
+ * The settings saved in storage over the defaults. An earlier version had a switch that added a
+ * passphrase to the suggestions ("passphrases"); someone who turned it on gets passphrases.
+ */
+export function withStoredSettings(defaults: Settings, stored: Record<string, unknown> = {}): Settings {
+  const { passphrases, ...rest } = stored;
+  const settings = { ...defaults, ...(rest as Partial<Settings>) };
+  if (stored.passwordStyle === undefined && passphrases === true) settings.passwordStyle = "passphrase";
+  return settings;
+}
 
 /**
  * The defaults on this platform. Apple's helper on Windows never asks before giving out a password,
@@ -206,10 +222,11 @@ export interface AutofillStatus {
 export type SuggestionStyle = PasswordStyle | "passphrase";
 
 export interface GeneratedPasswords {
-  strong: Suggestion;
+  /** Left out when a passphrase is offered instead. */
+  strong?: Suggestion;
   /** Left out when the site's rules need a special character, or the strong one has none anyway. */
   alphanumeric?: Suggestion;
-  /** Only when the user asked for passphrases, and the site's rules take one. */
+  /** In place of the others, when the user chose passphrases and the site's rules take one. */
   passphrase?: Suggestion;
   /**
    * The account they'd be saved for when the form has no username (a password reset): the login
@@ -266,6 +283,7 @@ interface Responses {
   "fill-one-time-code-from-menu": { result: string };
   "get-settings": Settings;
   "set-settings": Settings;
+  "sample-passphrase": Suggestion;
   "autofill-status": AutofillStatus;
   /** `unavailable`: why the site's rules leave nothing worth suggesting. */
   "generate-passwords": GeneratedPasswords | { unavailable: string };

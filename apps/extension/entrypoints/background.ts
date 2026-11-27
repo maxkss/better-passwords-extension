@@ -24,6 +24,7 @@ import {
   type Settings,
   type SignInState,
   type Status,
+  withStoredSettings,
 } from "@/src/messages.ts";
 import { PortTransport } from "@/src/native/port-transport.ts";
 import {
@@ -34,6 +35,7 @@ import {
   type Suggestion,
 } from "@/src/passwords/generate.ts";
 import { findOneTimeCodes, oneTimeCodeId, oneTimeCodeViews } from "@/src/passwords/one-time-codes.ts";
+import type { PassphraseOptions } from "@/src/passwords/passphrase-options.ts";
 import { withSiteRules } from "@/src/passwords/site-rules.ts";
 import { waitForLogin } from "@/src/passwords/wait-for-login.ts";
 import { platform } from "@/src/platform.ts";
@@ -906,6 +908,19 @@ export default defineBackground(() => {
         const account = guess ? await accountFor(url.hostname).catch(() => undefined) : undefined;
         // sites that don't state their rules in HTML: Apple's list of known ones
         const rules = url ? withSiteRules(context.rules, url.hostname) : context.rules;
+        // the user's choice of a passphrase, when the site takes one; else Apple's kind of password
+        const settings = await getSettings();
+        if (settings.passwordStyle === "passphrase") {
+          try {
+            const passphrase = generatePassphrase(rules, passphraseOptionsOf(settings));
+            const passwords: GeneratedPasswords = { passphrase, ...(account ? { account } : {}) };
+            generatedForMenu.set(`${tabId}:${request.nonce}`, passwords);
+            return passwords;
+          } catch (error) {
+            // too long for the site, or it won't take the separator: a password it does take
+            if (!(error instanceof PasswordRulesError)) throw error;
+          }
+        }
         let strong: Suggestion;
         try {
           strong = generatePassword("strong", rules);
@@ -920,20 +935,6 @@ export default defineBackground(() => {
             passwords.alphanumeric = generatePassword("alphanumeric", rules);
           } catch (error) {
             // the site needs a special character: an alternative without would be turned down
-            if (!(error instanceof PasswordRulesError)) throw error;
-          }
-        }
-        const settings = await getSettings();
-        if (settings.passphrases) {
-          try {
-            passwords.passphrase = generatePassphrase(rules, {
-              words: settings.passphraseWords,
-              separator: settings.passphraseSeparator,
-              capital: settings.passphraseCapital,
-              digit: settings.passphraseDigit,
-            });
-          } catch (error) {
-            // too long for the site, or it won't take hyphens: the other suggestions stand
             if (!(error instanceof PasswordRulesError)) throw error;
           }
         }
@@ -997,6 +998,9 @@ export default defineBackground(() => {
         return null;
       case "get-settings":
         return getSettings();
+      case "sample-passphrase":
+        // a random example, made fresh: it gives nothing away, so any of our pages may ask
+        return generatePassphrase({}, passphraseOptionsOf(await getSettings()));
       case "set-settings":
         return saveSettings(request.settings);
       case "email-suggestions":
@@ -1205,5 +1209,15 @@ async function tabUrl(tabId: number): Promise<URL | undefined> {
 
 async function getSettings(): Promise<Settings> {
   const { settings } = await browser.storage.local.get("settings");
-  return { ...defaultSettings(await platform()), ...(settings as Partial<Settings> | undefined) };
+  return withStoredSettings(defaultSettings(await platform()), settings as Record<string, unknown> | undefined);
+}
+
+/** How the user set passphrases to be made. */
+function passphraseOptionsOf(settings: Settings): PassphraseOptions {
+  return {
+    words: settings.passphraseWords,
+    separator: settings.passphraseSeparator,
+    capital: settings.passphraseCapital,
+    digit: settings.passphraseDigit,
+  };
 }
