@@ -45,7 +45,7 @@ This personal fork isn't in the browser stores. Download `passwords-plus-<versio
 
 ### Connect to apple passwords
 
-[Build the optional companion Mac app](docs/companion.md), move it to Applications, open **Passwords Plus.app**, and choose **Connect**. It also enables Touch ID and contact email suggestions after you allow the required permissions.
+Download the optional companion Mac app, `passwords-plus-<version>-mac.dmg`, from the [latest `companion-v` release](https://github.com/maxkss/better-passwords-extension/releases?q=companion-v&expanded=true) ([how it works](docs/companion.md)). Move it to Applications, open **Passwords Plus.app**, and choose **Connect**. It also enables Touch ID and contact email suggestions after you allow the required permissions.
 
 Or run the setup script without the companion app:
 

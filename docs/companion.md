@@ -45,9 +45,15 @@ Steps 1 to 3 also guard the contact card: the agent reads it only for a browser 
 
 The host checks the agent too: release builds require our team, and development builds require our identifier. The host sends nothing secret to the agent. A fake agent could at worst supply a wrong code, which fails the SRP handshake.
 
+## Installing a release
+
+Each `companion-v*` release on GitHub has the app as a disk image, `passwords-plus-<version>-mac.dmg`, signed with a Developer ID and notarized. Open it, drag **Passwords Plus** to Applications, open it from there, and set it up as below ("In the window"). The app doesn't update itself: install a newer release over it.
+
+If a release was built without the Developer ID secrets (see [release.md](release.md#companion-app)), it's ad hoc signed and not notarized instead. macOS then refuses to open it the first time: click **Done**, go to **System Settings › Privacy & Security**, and click **Open Anyway** (or run `xattr -dr com.apple.quarantine "/Applications/Passwords Plus.app"`). Such an app is a new app to macOS with every version, so after an update click **Remove Setup**, then **Turn On**, and allow Accessibility (and Contacts) again.
+
 ## Building and trying it
 
-Sign local builds with an Apple Development certificate and install them in /Applications:
+To build it yourself instead, sign it with an Apple Development certificate (`security find-identity -v -p codesigning` lists yours; a free Apple account in Xcode gives you one) and install it in /Applications:
 
 ```sh
 cd apps/companion

@@ -28,7 +28,7 @@ The Chromium extension ID is `dldapmofalpjbidlgmmjkiikhhckemlo`. Its public key 
 
 ## Companion app
 
-The companion job stays off until the repository variable `COMPANION_RELEASE` is `true`. An unsigned app would be blocked by Gatekeeper, so a release needs these secrets:
+The companion job releases on every push to `main` that has `feat(companion)` or `fix(companion)` commits. Without secrets, the disk image is ad hoc signed and not notarized: free, and users open it with **Open Anyway** (see [companion.md](companion.md#installing-a-release)). With these secrets, it's signed with the Developer ID and notarized instead, and Gatekeeper opens it without asking:
 
 | Secret | What |
 |---|---|
@@ -41,11 +41,11 @@ The companion job stays off until the repository variable `COMPANION_RELEASE` is
 
 `apps/companion/scripts/release.sh`:
 
-1. builds a universal app, signs it with the hardened runtime, notarizes it and staples the ticket,
-2. puts it in a disk image next to a link to Applications, then signs, notarizes and staples the disk image,
-3. runs Sparkle's `generate_appcast`, which signs the disk image and the appcast with the EdDSA key.
+1. builds a universal app; with a Developer ID, signs it with the hardened runtime, notarizes it and staples the ticket (else ad hoc signs it),
+2. puts it in a disk image next to a link to Applications; with a Developer ID, signs, notarizes and staples the disk image,
+3. with `SPARKLE_PRIVATE_KEY`, runs Sparkle's `generate_appcast`, which signs the disk image and the appcast with the EdDSA key.
 
-semantic-release attaches the disk image and `appcast.xml` to a `companion-vX.Y.Z` GitHub release, and CI attests the disk image's build provenance.
+semantic-release attaches the disk image (and `appcast.xml`, if there is one) to a `companion-vX.Y.Z` GitHub release, and CI attests the disk image's build provenance. The extension's "Download for Mac" links list these releases.
 
 This fork's app has no appcast: `SUFeedURL` and `SUPublicEDKey` are left out of `apps/companion/Resources/Info.plist`, so installed apps never look for updates. To ship updates, generate your own Sparkle key, put its public half in `SUPublicEDKey`, and point `SUFeedURL` at an `appcast.xml` you host.
 
