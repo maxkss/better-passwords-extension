@@ -1,8 +1,7 @@
-// A way to report a problem from inside the extension, for people who found it in a store and
-// never saw the repository: email first, since GitHub's bug form asks most of them to sign in.
-// Both are pre-filled with versions only; nothing is sent until the user sends it.
+// A way to report a problem from inside the extension: GitHub's bug form, pre-filled with versions
+// only. Nothing is sent until the user submits it.
 
-import { DISPLAY_NAME, REPO_URL, SUPPORT_EMAIL } from "../config.ts";
+import { REPO_URL } from "../config.ts";
 import { h } from "./h.ts";
 
 /** What a bug report needs and people often leave out. Each is optional: it may not be readable. */
@@ -13,25 +12,12 @@ export interface ReportDetails {
   os?: string;
 }
 
-const WARNING = "Please never include passwords, pairing codes or screenshots showing them.";
-
-/** The pre-filled bug form and email. The query keys are the field ids in .github/ISSUE_TEMPLATE/bug.yml. */
-export function reportLinks(details: ReportDetails): { github: string; email: string } {
+/** The pre-filled bug form. The query keys are the field ids in .github/ISSUE_TEMPLATE/bug.yml. */
+export function reportLinks(details: ReportDetails): { github: string } {
   const form = new URLSearchParams({ template: "bug.yml" });
   for (const [key, value] of Object.entries(details)) if (value) form.set(key, value);
 
-  const lines = [
-    ["Extension version", details.version],
-    ["Browser", details.browser],
-    ["System", details.os],
-  ]
-    .filter(([, value]) => value)
-    .map(([label, value]) => `${label}: ${value}`);
-  const body = ["What happened, and what did you expect?", "", "", "---", ...lines, "", WARNING].join("\n");
-  // URLSearchParams encodes spaces as "+", which mail apps show as is
-  const mail = `subject=${encodeURIComponent(`${DISPLAY_NAME}: problem report`)}&body=${encodeURIComponent(body)}`;
-
-  return { github: `${REPO_URL}/issues/new?${form}`, email: `mailto:${SUPPORT_EMAIL}?${mail}` };
+  return { github: `${REPO_URL}/issues/new?${form}` };
 }
 
 /** Chromium's User-Agent Client Hints; the user-agent string itself always says macOS 10.15.7. */
@@ -85,17 +71,13 @@ export async function browserName(): Promise<string | undefined> {
   return browser?.replace(/\s+[\d.]+$/, "") || undefined;
 }
 
-/** "Something wrong? Email the developer or report it on GitHub." */
+/** "Something wrong? Report it on GitHub." */
 export function reportProblem(): HTMLElement {
   const plain = reportLinks({});
-  const github = h("a", { href: plain.github, target: "_blank", rel: "noopener", textContent: "report it on GitHub" });
-  // the address on hover, for anyone without a mail app to open
-  const email = h("a", { href: plain.email, title: SUPPORT_EMAIL, textContent: "Email the developer" });
-  // the links work right away; they gain the details as soon as those are read
+  const github = h("a", { href: plain.github, target: "_blank", rel: "noopener", textContent: "Report it on GitHub" });
+  // the link works right away; it gains the details as soon as those are read
   void reportDetails().then((details) => {
-    const links = reportLinks(details);
-    github.href = links.github;
-    email.href = links.email;
+    github.href = reportLinks(details).github;
   });
-  return h("p", { class: "report" }, "Something wrong? ", email, " or ", github, ".");
+  return h("p", { class: "report" }, "Something wrong? ", github, ".");
 }

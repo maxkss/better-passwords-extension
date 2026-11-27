@@ -7,7 +7,7 @@ import { DISPLAY_NAME, EXTENSION_PUBLIC_KEY, FILL_MATCHES, FIREFOX_EXTENSION_ID,
 
 const EXTENSION_CSP =
   "default-src 'self'; script-src 'self'; object-src 'none'; img-src 'self' data:; " +
-  "connect-src 'self' https://*.icloud.com; frame-src 'self' betterpasswords:";
+  "connect-src 'self' https://*.icloud.com; frame-src 'self' passwordsplus:";
 
 export default defineConfig({
   outDirTemplate: "{{browser}}-mv{{manifestVersion}}{{modeSuffix}}",
@@ -32,8 +32,8 @@ export default defineConfig({
     },
   },
   zip: {
-    artifactTemplate: "better-passwords-{{packageVersion}}-{{browser}}.zip",
-    sourcesTemplate: "better-passwords-{{packageVersion}}-sources.zip",
+    artifactTemplate: "passwords-plus-{{packageVersion}}-{{browser}}.zip",
+    sourcesTemplate: "passwords-plus-{{packageVersion}}-sources.zip",
     // Reviewers need the workspace protocol package and root lockfile to reproduce the build.
     sourcesRoot: fileURLToPath(new URL("../../", import.meta.url)),
     includeSources: [

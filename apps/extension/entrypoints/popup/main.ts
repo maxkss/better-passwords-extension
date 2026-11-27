@@ -347,7 +347,7 @@ function extensionUpdate(version: string | undefined) {
     {},
     sectionTitle("Update"),
     list(row({ tall: true, title: `Version ${version} is ready`, trailing: install })),
-    h("p", { class: "foot" }, "Updating locks Better Passwords, so you'll enter the code again."),
+    h("p", { class: "foot" }, "Updating locks Passwords Plus, so you'll enter the code again."),
   );
 }
 

@@ -741,7 +741,7 @@ function showSetup() {
   // set up and unlocked from the popup or the setup page: this menu shows the logins then
   view = "locked";
   render(
-    row(KEY, "Set Up Better Passwords", "One quick step to reach Apple Passwords", async () => {
+    row(KEY, "Set Up Passwords Plus", "One quick step to reach Apple Passwords", async () => {
       await send({ type: "open-setup-page" }).catch(() => {});
       close();
     }),

@@ -6,7 +6,13 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!**/.output", "!**/.wxt", "!**/*.svg", "!apps/extension/src/passwords/site-rules.json"]
+    "includes": [
+      "**",
+      "!**/.output",
+      "!**/.wxt",
+      "!**/*.svg",
+      "!apps/extension/src/passwords/site-rules.json"
+    ]
   },
   "formatter": {
     "indentStyle": "space",
@@ -40,16 +46,6 @@
         "rules": {
           "suspicious": {
             "noTemplateCurlyInString": "off"
-          }
-        }
-      }
-    },
-    {
-      "includes": ["apps/site/**"],
-      "linter": {
-        "rules": {
-          "style": {
-            "noDescendingSpecificity": "off"
           }
         }
       }

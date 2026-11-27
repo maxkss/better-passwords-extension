@@ -1,4 +1,4 @@
-# One-time setup for Better Passwords on Windows.
+# One-time setup for Passwords Plus on Windows.
 #
 # Browsers only let an extension start a native program that a small JSON "host manifest" names.
 # iCloud for Windows registers one for Apple's own extension; this script writes the same kind of
@@ -6,7 +6,7 @@
 # pairing and encryption. It changes nothing else and needs no admin rights.
 #
 # Usage, in PowerShell:
-#   irm https://github.com/fanckush/better-passwords-extension/raw/main/scripts/setup-windows.ps1 | iex
+#   irm https://github.com/maxkss/better-passwords-extension/raw/main/scripts/setup-windows.ps1 | iex
 # or, from a downloaded copy:
 #   powershell -ExecutionPolicy Bypass -File setup-windows.ps1 [-Uninstall] [-ExtensionId ID] [-HelperPath EXE]
 #   -ExtensionId  also allow another Chromium extension ID (e.g. a local build)
@@ -21,14 +21,14 @@ param(
 
 # Everything lives in this function: piped into iex, the script runs in the user's own session,
 # where `exit` would close the window and script-level settings would stay behind.
-function Invoke-BetterPasswordsSetup([bool]$Uninstall, [string[]]$ExtensionId, [string]$HelperPath) {
+function Invoke-PasswordsPlusSetup([bool]$Uninstall, [string[]]$ExtensionId, [string]$HelperPath) {
     Set-StrictMode -Version 2.0
     $ErrorActionPreference = "Stop"
 
-    $hostName = "io.github.fanckush.betterpasswords.bridge"
-    $chromiumIds = @("ocongmkplhijgajnipnhhggfcjfdilgj") + $ExtensionId
-    $firefoxId = "better-passwords@fanckush.github.io"
-    $manifestDir = Join-Path $env:LOCALAPPDATA "Better Passwords\NativeMessagingHosts"
+    $hostName = "io.github.maxkss.passwordsplus.bridge"
+    $chromiumIds = @("dldapmofalpjbidlgmmjkiikhhckemlo") + $ExtensionId
+    $firefoxId = "passwords-plus@maxkss.github.io"
+    $manifestDir = Join-Path $env:LOCALAPPDATA "Passwords Plus\NativeMessagingHosts"
     $chromiumManifest = Join-Path $manifestDir "$hostName.json"
     $firefoxManifest = Join-Path $manifestDir "$hostName.firefox.json"
     $firefoxLauncher = Join-Path $manifestDir "$hostName.firefox.bat"
@@ -57,7 +57,7 @@ function Invoke-BetterPasswordsSetup([bool]$Uninstall, [string[]]$ExtensionId, [
                 Write-Host "  removed $file"
             }
         }
-        Write-Host "Done. Better Passwords can no longer reach Apple's helper."
+        Write-Host "Done. Passwords Plus can no longer reach Apple's helper."
         return 0
     }
 
@@ -111,7 +111,7 @@ function Invoke-BetterPasswordsSetup([bool]$Uninstall, [string[]]$ExtensionId, [
     function Write-Manifest([string]$Path, [string]$AllowKey, [string[]]$Allowed, [string]$Target) {
         $manifest = [ordered]@{
             name = $hostName
-            description = "Better Passwords: connects the extension to Apple's password helper"
+            description = "Passwords Plus: connects the extension to Apple's password helper"
             path = $Target
             type = "stdio"
         }
@@ -151,16 +151,16 @@ function Invoke-BetterPasswordsSetup([bool]$Uninstall, [string[]]$ExtensionId, [
     }
 
     Write-Host ""
-    Write-Host "Done. Click the Better Passwords icon in your browser to pair."
+    Write-Host "Done. Click the Passwords Plus icon in your browser to pair."
     return 0
 }
 
 $code = 1
 try {
-    $code = Invoke-BetterPasswordsSetup $Uninstall.IsPresent $ExtensionId $HelperPath
+    $code = Invoke-PasswordsPlusSetup $Uninstall.IsPresent $ExtensionId $HelperPath
 } catch {
     Write-Host $_.Exception.Message -ForegroundColor Red
 }
-Remove-Item Function:\Invoke-BetterPasswordsSetup -ErrorAction SilentlyContinue
+Remove-Item Function:\Invoke-PasswordsPlusSetup -ErrorAction SilentlyContinue
 # a file run with -File reports how it went; piped into iex, the window stays open
 if ($PSCommandPath) { exit $code }

@@ -1,5 +1,5 @@
 #!/bin/sh
-# One-time setup for Better Passwords on macOS.
+# One-time setup for Passwords Plus on macOS.
 #
 # Browsers only let an extension start a native program that a small JSON "host manifest" names.
 # macOS ships one for Apple's own extension; this script writes the same kind of file for ours.
@@ -12,10 +12,10 @@
 
 set -eu
 
-HOST="io.github.fanckush.betterpasswords.bridge"
+HOST="io.github.maxkss.passwordsplus.bridge"
 HELPER="/System/Cryptexes/App/System/Library/CoreServices/PasswordManagerBrowserExtensionHelper.app/Contents/MacOS/PasswordManagerBrowserExtensionHelper"
-CHROMIUM_IDS="ocongmkplhijgajnipnhhggfcjfdilgj"
-FIREFOX_ID="better-passwords@fanckush.github.io"
+CHROMIUM_IDS="dldapmofalpjbidlgmmjkiikhhckemlo"
+FIREFOX_ID="passwords-plus@maxkss.github.io"
 SUPPORT="$HOME/Library/Application Support"
 
 # Chromium-based browsers: the path of their user data directory under Application Support, their
@@ -40,7 +40,7 @@ Yab/Chromium|Yab
 Stedding|Stedding
 Search|Search|Chromium
 Orion|Orion|Google/Chrome"
-REQUEST_URL="https://github.com/fanckush/better-passwords-extension/issues/new?template=browser.yml"
+REQUEST_URL="https://github.com/maxkss/better-passwords-extension/issues/new?template=browser.yml"
 
 uninstall=0
 user_data_dir=""
@@ -96,7 +96,7 @@ write_manifest() {
     cat >"$file" <<EOF
 {
   "name": "$HOST",
-  "description": "Better Passwords: connects the extension to Apple's password helper",
+  "description": "Passwords Plus: connects the extension to Apple's password helper",
   "path": "$HELPER",
   "type": "stdio",
   "$2": [$3]
@@ -152,7 +152,7 @@ if [ -d "$SUPPORT/Firefox" ] || [ -d "$SUPPORT/zen" ]; then
 fi
 
 if [ "$uninstall" -eq 1 ]; then
-    echo "Done. Better Passwords can no longer reach Apple's helper."
+    echo "Done. Passwords Plus can no longer reach Apple's helper."
     exit 0
 fi
 
@@ -178,12 +178,12 @@ done
 
 if [ -n "$unknown" ]; then
     echo
-    echo "Better Passwords is installed in a browser this script doesn't support yet:"
+    echo "Passwords Plus is installed in a browser this script doesn't support yet:"
     printf '%s' "$unknown" | sort -u | sed 's/^/  /'
     echo "Ask for it here: $REQUEST_URL"
     echo "Until then you can try connecting it with --user-data-dir, for example:"
     printf '%s' "$unknown" | sort -u | head -n 1 | while IFS= read -r data; do
-        echo "  curl -fsSL https://github.com/fanckush/better-passwords-extension/raw/main/scripts/setup-mac.sh | sh -s -- --user-data-dir \"$data\""
+        echo "  curl -fsSL https://github.com/maxkss/better-passwords-extension/raw/main/scripts/setup-mac.sh | sh -s -- --user-data-dir \"$data\""
     done
 fi
 
@@ -196,5 +196,5 @@ if [ -z "$connected" ]; then
     exit 1
 fi
 echo "Connected: $connected."
-echo "Done. Click the Better Passwords icon in your browser to pair."
+echo "Done. Click the Passwords Plus icon in your browser to pair."
 [ -n "$unknown" ] || echo "Missing a browser? Ask for it here: $REQUEST_URL"

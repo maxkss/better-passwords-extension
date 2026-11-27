@@ -11,7 +11,7 @@ const setupUrl = `chrome-extension://${EXTENSION_ID}/setup.html`;
 test("the popup welcomes, notices the setup, and moves on to the code", async ({ context, popupUrl, runSetup }) => {
   const popup = await context.newPage();
   await popup.goto(popupUrl);
-  await expect(popup.getByRole("heading", { name: "Welcome to Better Passwords" })).toBeVisible();
+  await expect(popup.getByRole("heading", { name: "Welcome to Passwords Plus" })).toBeVisible();
   // "not set up" is the normal first state, not an error
   await expect(popup.getByText(/native messaging host/i)).toHaveCount(0);
 
@@ -53,15 +53,15 @@ test("the inline menu offers the setup on login fields", async ({ context, siteU
   await page.locator("#pass").click();
   const menu = await menuFrame(page);
   const opened = context.waitForEvent("page", { predicate: (p) => p.url() === setupUrl });
-  await choose(menu, "Set Up Better Passwords");
+  await choose(menu, "Set Up Passwords Plus");
   const setup = await opened;
-  await expect(setup.getByRole("heading", { name: "Welcome to Better Passwords" })).toBeVisible();
+  await expect(setup.getByRole("heading", { name: "Welcome to Passwords Plus" })).toBeVisible();
 });
 
 test("the setup page follows along until unlocked", async ({ context, popupUrl, runSetup }) => {
   const setup = await context.newPage();
   await setup.goto(setupUrl);
-  await expect(setup.getByRole("heading", { name: "Welcome to Better Passwords" })).toBeVisible();
+  await expect(setup.getByRole("heading", { name: "Welcome to Passwords Plus" })).toBeVisible();
 
   runSetup();
   await expect(setup.getByRole("heading", { name: "You're connected" })).toBeVisible();
@@ -77,7 +77,7 @@ test("a fresh install opens the setup page", async ({ context }) => {
   const setup =
     context.pages().find((p) => p.url() === setupUrl) ??
     (await context.waitForEvent("page", { predicate: (p) => p.url() === setupUrl }));
-  await expect(setup.getByRole("heading", { name: "Welcome to Better Passwords" })).toBeVisible();
+  await expect(setup.getByRole("heading", { name: "Welcome to Passwords Plus" })).toBeVisible();
 });
 
 test.describe("when this browser is set up already", () => {
@@ -100,13 +100,13 @@ test("the setup is offered on a login form's email field too", async ({ context,
   });
   await page.locator("#user").click();
   const menu = await menuFrame(page);
-  await expect(menu.getByText("Set Up Better Passwords")).toBeVisible();
+  await expect(menu.getByText("Set Up Passwords Plus")).toBeVisible();
 });
 
 test("the welcome links to a bug form filled in with this browser's details", async ({ context, popupUrl }) => {
   const popup = await context.newPage();
   await popup.goto(popupUrl);
-  const github = popup.getByRole("link", { name: "report it on GitHub" });
+  const github = popup.getByRole("link", { name: "Report it on GitHub" });
   await expect(github).toHaveAttribute("href", new RegExp(`^${REPO_URL}/issues/new\\?template=bug\\.yml&version=`));
   // Chromium reads its own name and version from the client hints
   await expect(github).toHaveAttribute("href", /&browser=/);

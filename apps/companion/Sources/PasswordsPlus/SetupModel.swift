@@ -148,7 +148,7 @@ final class SetupModel {
         refresh()
     }
 
-    /// The app was opened through betterpasswords://connect, normally from a browser's extension.
+    /// The app was opened through passwordsplus://connect, normally from a browser's extension.
     /// Any web page can open the link too, so it connects the browser that opened it and nothing
     /// more. Other browsers are connected only if the user set things up already (and didn't
     /// disconnect them); after Remove Setup, nothing else is.

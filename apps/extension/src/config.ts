@@ -1,11 +1,9 @@
 // Shared product identity. Browser packages and download routes use the same configuration.
 
-export const DISPLAY_NAME = "Better Passwords";
-export const STORE_TITLE = "Better Passwords - for Apple Passwords";
+export const DISPLAY_NAME = "Passwords Plus";
+export const STORE_TITLE = "Passwords Plus - for Apple Passwords";
 
-export const REPO_URL = "https://github.com/fanckush/better-passwords-extension";
-/** Where problems can be reported without a GitHub account. */
-export const SUPPORT_EMAIL = "fanckush@gmail.com";
+export const REPO_URL = "https://github.com/maxkss/better-passwords-extension";
 export const SETUP_COMMAND = `curl -fsSL ${REPO_URL}/raw/main/scripts/setup-mac.sh | sh`;
 /** The same setup on Windows, for PowerShell. */
 export const WINDOWS_SETUP_COMMAND = `irm ${REPO_URL}/raw/main/scripts/setup-windows.ps1 | iex`;
@@ -16,37 +14,32 @@ export const ICLOUD_FOR_WINDOWS_URL = "https://apps.microsoft.com/detail/9PKTQ56
  * Our own registration of Apple's helper, written by scripts/setup-mac.sh or the companion app on a
  * Mac, and by scripts/setup-windows.ps1 on Windows.
  */
-export const BRIDGE_HOST = "io.github.fanckush.betterpasswords.bridge";
+export const BRIDGE_HOST = "io.github.maxkss.passwordsplus.bridge";
 
 /** The optional Touch ID companion app's own native host (see apps/companion). */
-export const COMPANION_HOST = "io.github.fanckush.betterpasswords.companion";
+export const COMPANION_HOST = "io.github.maxkss.passwordsplus.companion";
 
 export const HELPER_PATH =
   "/System/Cryptexes/App/System/Library/CoreServices/PasswordManagerBrowserExtensionHelper.app/Contents/MacOS/PasswordManagerBrowserExtensionHelper";
 
 /**
- * Chrome Web Store public key, keeping unpacked builds on the published extension ID.
- * Store ZIPs omit the key field; the store supplies the identity when signing.
+ * This fork's own public key, so every unpacked build gets the same extension ID (EXTENSION_ID),
+ * which the native host manifests allow. Store ZIPs omit the key field.
  */
 export const EXTENSION_PUBLIC_KEY =
-  "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAp2/Wf1H7oA9Gtl9Ek7ELlADUenHSFBzcfTaH0whjkdyrb1SlmHATUiZrEjSwAc0LuGveH+dcB+adUZYshW8sfNH+/ymV8UI5QbYfeECSg7hcLOe6AKFD+zPr1C0ezHkAfcvPvIxZyZFvUu+wJ2kKVkunObN0ccth2+W0xubpQF3xZ7OcGS8nsjekjFM6rIIQw1X74lKS5tqLwh74THpNmnNsR3RajFUPajT9U8jXPOO3Azf5wvNwrr0qIUGRuzvHawzDWvuB/+RBahE8rFYL45u8nxgTCLdt/EuEdMeUmoGgDmzD87fnFQo0OQxZ3bzz3sc35bnAjdmt+aS2RObMQwIDAQAB";
+  "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4UzIAcUywMEzpDBGPrIMuPdG10YU0v97DXfu09GWlKIwkyUS8TyWPmoD8RMu6qm6NNiNDy9sHQCP/K2nhtD2fzDyBvBd5Lc2n3PSzBcjjsWlzqWujgFgDjho86VbbbX4nYgm0NRlhrFeTiCX9qymUPclx+iSTHKBwhGCO0Y8nFdpJO2UPzCqOhTb/5VlhOVwgBipivdZL6ksT4e2a6e8AXOtyIBAwMuMz7SDuS0h+sNHhZ1GG2YLJ3V39LM79MbcHrW6kbV1Ju1fIu3bhA8SIeCynFtBeuyqvZqwPg95SwdrUCe3nZBJV5Ng9VBci0FEfdTo1FnF4VapHsF2azFwhwIDAQAB";
 
-export const EXTENSION_ID = "ocongmkplhijgajnipnhhggfcjfdilgj";
-export const FIREFOX_EXTENSION_ID = "better-passwords@fanckush.github.io";
+export const EXTENSION_ID = "dldapmofalpjbidlgmmjkiikhhckemlo";
+export const FIREFOX_EXTENSION_ID = "passwords-plus@maxkss.github.io";
 
 /** Pages where the inline menu runs and passwords may be filled (see src/url-policy.ts). */
 export const FILL_MATCHES = ["https://*/*", "http://localhost/*", "http://127.0.0.1/*"];
 
-export const SITE_URL = "https://betterpasswords.app";
-
-/**
- * The same optional companion app is used by every extension installation. The site redirects to
- * the newest release (apps/site/worker.js), so where releases live can change without an update.
- */
-export const COMPANION_DOWNLOAD_URL = `${SITE_URL}/download/mac`;
+/** The optional companion app, from this fork's GitHub releases (see docs/companion.md to build it). */
+export const COMPANION_DOWNLOAD_URL = `${REPO_URL}/releases`;
 
 /**
  * Opens the companion app, which then connects the browser that opened it. Its scheme is in the
  * app's Info.plist. Without the app, browsers ignore it (see openCompanionLink in src/ui/setup.ts).
  */
-export const COMPANION_CONNECT_URL = "betterpasswords://connect";
+export const COMPANION_CONNECT_URL = "passwordsplus://connect";

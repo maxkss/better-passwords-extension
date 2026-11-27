@@ -1,5 +1,8 @@
-Better Passwords
-Copyright (c) 2026 Better Passwords contributors
+Passwords Plus
+Copyright (c) 2026 maxkss
+
+Passwords Plus is a fork of Better Passwords (https://github.com/fanckush/better-passwords-extension),
+Copyright (c) 2026 Better Passwords contributors, under the MIT license.
 
 The implementation of Apple's helper protocol in packages/protocol was written for this
 project, informed by these Apache-2.0 licensed projects:

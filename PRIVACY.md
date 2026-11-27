@@ -1,6 +1,6 @@
 # Privacy policy
 
-Better Passwords (the browser extension and the optional Mac companion app) handles the information described below to fill and save logins and suggest email addresses. The developer receives none of this information. Password operations use Apple’s local password helper (built into macOS, or part of iCloud for Windows); optional Hide My Email connects to Apple’s iCloud.
+Passwords Plus (the browser extension and the optional Mac companion app) handles the information described below to fill and save logins and suggest email addresses. The developer receives none of this information. Password operations use Apple’s local password helper (built into macOS, or part of iCloud for Windows); optional Hide My Email connects to Apple’s iCloud.
 
 ## What it handles, and where
 
@@ -17,12 +17,11 @@ Better Passwords (the browser extension and the optional Mac companion app) hand
 
 - No analytics, telemetry, crash reporting or ads.
 - No servers. The project runs no backend. The extension's only network requests are to Apple's iCloud, for Hide My Email, and only if you turn it on.
-- **Update checks (companion app only).** Once a day the companion app fetches the list of releases from betterpasswords.app, and downloads an update from GitHub when you accept one. These requests carry the app's version and macOS version, as any download does, and your IP address; nothing else. You can turn the checks off in the app.
-- **Reporting a problem (only when you click it).** "Email the developer" or "report it on GitHub" opens your mail app or GitHub's issue form, pre-filled with the extension, browser and macOS versions. Nothing is sent unless you submit the issue or send the email yourself.
+- **Reporting a problem (only when you click it).** "Report it on GitHub" opens GitHub's issue form, pre-filled with the extension, browser and macOS versions. Nothing is sent unless you submit the issue yourself.
 - No sale of data or use for advertising. Information is shared only with Apple’s services, the local helper/companion, and the websites you choose, as described above.
 
 ## Contact
 
-Questions: open an issue at https://github.com/fanckush/better-passwords-extension, or email fanckush@gmail.com. For security reports, see [SECURITY.md](SECURITY.md).
+Questions: open an issue at https://github.com/maxkss/better-passwords-extension. For security reports, see [SECURITY.md](SECURITY.md).
 
 Last updated: October 2026.

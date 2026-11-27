@@ -58,7 +58,7 @@ describe("HideMyEmail", () => {
     expect(JSON.parse(String(reserve?.init?.body))).toEqual({
       hme: "fresh@icloud.com",
       label: "example.com",
-      note: "Created by Better Passwords",
+      note: "Created by Passwords Plus",
     });
   });
 
@@ -120,10 +120,10 @@ describe("HideMyEmail", () => {
 
 describe("headerRule", () => {
   it("only touches our background's requests to iCloud", () => {
-    expect(headerRule("ocongmkplhijgajnipnhhggfcjfdilgj").condition).toEqual({
+    expect(headerRule("dldapmofalpjbidlgmmjkiikhhckemlo").condition).toEqual({
       requestDomains: ["icloud.com"],
       // a website's service worker has no tab either: only requests we start qualify
-      initiatorDomains: ["ocongmkplhijgajnipnhhggfcjfdilgj"],
+      initiatorDomains: ["dldapmofalpjbidlgmmjkiikhhckemlo"],
       tabIds: [-1],
       resourceTypes: ["xmlhttprequest"],
     });

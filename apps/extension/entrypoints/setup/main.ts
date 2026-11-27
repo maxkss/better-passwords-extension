@@ -6,7 +6,7 @@ import { h } from "@/src/ui/h.ts";
 import { setupFlow } from "@/src/ui/setup.ts";
 
 // The setup flow in a tab of its own: opened on install when this browser can't reach Apple's
-// helper yet, and from the inline menu's "Set Up Better Passwords".
+// helper yet, and from the inline menu's "Set Up Passwords Plus".
 
 applySystemAccent();
 
@@ -20,7 +20,7 @@ async function openPopup(button: HTMLButtonElement) {
     await action.openPopup();
   } catch {
     button.replaceWith(
-      h("p", { class: "note", textContent: "Click the Better Passwords button in your browser's toolbar to unlock." }),
+      h("p", { class: "note", textContent: "Click the Passwords Plus button in your browser's toolbar to unlock." }),
     );
   }
 }

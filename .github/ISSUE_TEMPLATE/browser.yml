@@ -20,7 +20,7 @@ body:
       label: Data folder
       description: >-
         The folder under ~/Library/Application Support where the browser keeps its profiles, if you
-        know it. The setup script prints it when it finds Better Passwords installed in a browser it
+        know it. The setup script prints it when it finds Passwords Plus installed in a browser it
         doesn't know.
   - type: textarea
     id: output
