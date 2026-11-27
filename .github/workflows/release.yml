@@ -69,6 +69,7 @@ jobs:
       - run: bun install --frozen-lockfile --ignore-scripts
       # SwiftPM looks up download credentials in the keychain, and that lookup hangs once the
       # signing keychain is in the search list, so fetch Sparkle (and its binary) before it is
+      - run: apps/companion/scripts/use-xcode-26.sh
       - run: swift package resolve
         working-directory: apps/companion
       - name: Import the signing certificate and notary key
