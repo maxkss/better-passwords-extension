@@ -35,8 +35,11 @@ export const FIREFOX_EXTENSION_ID = "passwords-plus@maxkss.github.io";
 /** Pages where the inline menu runs and passwords may be filled (see src/url-policy.ts). */
 export const FILL_MATCHES = ["https://*/*", "http://localhost/*", "http://127.0.0.1/*"];
 
-/** The optional companion app, from this fork's GitHub releases (see docs/companion.md to build it). */
-export const COMPANION_DOWNLOAD_URL = `${REPO_URL}/releases`;
+/**
+ * The optional companion app's releases (companion-v*), each with the disk image. They share the
+ * release list with the extension, so this lists only theirs.
+ */
+export const COMPANION_DOWNLOAD_URL = `${REPO_URL}/releases?q=companion-v&expanded=true`;
 
 /**
  * Opens the companion app, which then connects the browser that opened it. Its scheme is in the
