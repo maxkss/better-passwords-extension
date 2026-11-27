@@ -11,6 +11,7 @@
       "!**/.output",
       "!**/.wxt",
       "!**/*.svg",
+      "!**/*.icon",
       "!apps/extension/src/passwords/site-rules.json"
     ]
   },
