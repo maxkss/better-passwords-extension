@@ -107,7 +107,7 @@ async function activeTabId(): Promise<number | undefined> {
 async function refresh(error?: string) {
   let status: Status;
   try {
-    status = await send({ type: "get-status" });
+    status = await within(send({ type: "get-status" }));
   } catch (e) {
     return showRetry(messageOf(e));
   }
@@ -275,11 +275,40 @@ function showCodeEntry(status: Status, error?: string): HTMLInputElement {
 
 // --- unlocked: the site's passwords and codes ----------------------------------------------------
 
+/** How long the popup waits for an answer before it shows its frame, and before it gives up. */
+const LOADING_AFTER_MS = 150;
+const ANSWER_WITHIN_MS = 10_000;
+
+/** `request`, or an error once `ms` have passed without an answer. */
+function within<T>(request: Promise<T>, ms = ANSWER_WITHIN_MS): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const late = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error("Apple Passwords didn't answer. Close the popup and try again.")), ms);
+  });
+  return Promise.race([request, late]).finally(() => clearTimeout(timer));
+}
+
 async function showLogins(status: Status, error?: string) {
+  const lock = tool("Lock", LOCK, async () => {
+    await send({ type: "lock" });
+    window.close();
+  });
+  const settings = tool("Settings", GEAR, () => void showSettings(status));
+
+  // the frame, if the answers take a moment, so the popup is never blank meanwhile
+  const loading = setTimeout(
+    () =>
+      show(
+        toolbar(DISPLAY_NAME, lock, settings),
+        h("main", {}, sectionTitle("Passwords"), list(h("p", { class: "empty", textContent: "Loading…" }))),
+      ),
+    LOADING_AFTER_MS,
+  );
+
   const tabId = await activeTabId();
   let result: LoginsResult = { logins: [] };
   try {
-    if (tabId !== undefined) result = await send({ type: "list-logins", tabId });
+    if (tabId !== undefined) result = await within(send({ type: "list-logins", tabId }));
   } catch (e) {
     error ??= messageOf(e);
   }
@@ -310,12 +339,9 @@ async function showLogins(status: Status, error?: string) {
     : null;
   settingUp = false;
 
-  const lock = tool("Lock", LOCK, async () => {
-    await send({ type: "lock" });
-    window.close();
-  });
-  const settings = tool("Settings", GEAR, () => void showSettings(status));
-
+  const codes = tabId === undefined || !result.hostname ? null : await oneTimeCodes(tabId);
+  const unconfirmed = await unconfirmedPasswords(tabId);
+  clearTimeout(loading);
   show(
     toolbar(result.hostname ? "Sign In" : DISPLAY_NAME, lock, settings),
     h(
@@ -326,8 +352,8 @@ async function showLogins(status: Status, error?: string) {
       sectionTitle("Passwords"),
       passwords,
       h("p", { class: "foot" }, "You can also look up passwords in the ", openApp, "."),
-      tabId === undefined || !result.hostname ? null : await oneTimeCodes(tabId),
-      await unconfirmedPasswords(tabId),
+      codes,
+      unconfirmed,
       errorLine(error),
     ),
   );
@@ -418,7 +444,7 @@ const COPY_WAIT_MS = 30_000;
 async function oneTimeCodes(tabId: number) {
   let result: OneTimeCodesResult;
   try {
-    result = await send({ type: "list-one-time-codes", tabId });
+    result = await within(send({ type: "list-one-time-codes", tabId }));
   } catch {
     return null;
   }
@@ -510,7 +536,7 @@ async function oneTimeCodes(tabId: number) {
  */
 async function unconfirmedPasswords(tabId: number | undefined) {
   if (tabId === undefined) return null;
-  const entries = await send({ type: "unconfirmed-passwords", tabId }).catch(() => []);
+  const entries = await within(send({ type: "unconfirmed-passwords", tabId })).catch(() => []);
   if (entries.length === 0) return null;
   const note = h("p", { class: "foot" }, "New passwords from this session, in case one wasn't saved.");
   return h(
