@@ -36,10 +36,10 @@ export const FIREFOX_EXTENSION_ID = "passwords-plus@maxkss.github.io";
 export const FILL_MATCHES = ["https://*/*", "http://localhost/*", "http://127.0.0.1/*"];
 
 /**
- * The optional companion app's releases (companion-v*), each with the disk image. They share the
- * release list with the extension, so this lists only theirs.
+ * The optional companion app's newest disk image. CI copies each companion-v* release's disk image
+ * to the fixed "mac-app" release under this name (scripts/release/mac-app.sh).
  */
-export const COMPANION_DOWNLOAD_URL = `${REPO_URL}/releases?q=companion-v&expanded=true`;
+export const COMPANION_DOWNLOAD_URL = `${REPO_URL}/releases/download/mac-app/passwords-plus-mac.dmg`;
 
 /**
  * Opens the companion app, which then connects the browser that opened it. Its scheme is in the

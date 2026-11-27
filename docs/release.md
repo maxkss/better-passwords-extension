@@ -45,7 +45,7 @@ The companion job releases on every push to `main` that has `feat(companion)` or
 2. puts it in a disk image next to a link to Applications; with a Developer ID, signs, notarizes and staples the disk image,
 3. with `SPARKLE_PRIVATE_KEY`, runs Sparkle's `generate_appcast`, which signs the disk image and the appcast with the EdDSA key.
 
-semantic-release attaches the disk image (and `appcast.xml`, if there is one) to a `companion-vX.Y.Z` GitHub release, and CI attests the disk image's build provenance. The extension's "Download for Mac" links list these releases.
+semantic-release attaches the disk image (and `appcast.xml`, if there is one) to a `companion-vX.Y.Z` GitHub release, and CI attests the disk image's build provenance. CI then copies the disk image to the fixed `mac-app` release as `passwords-plus-mac.dmg`, the file the extension's "Download for Mac" links download, and gives GitHub's "Latest" mark back to the newest extension release (`scripts/release/mac-app.sh`).
 
 This fork's app has no appcast: `SUFeedURL` and `SUPublicEDKey` are left out of `apps/companion/Resources/Info.plist`, so installed apps never look for updates. To ship updates, generate your own Sparkle key, put its public half in `SUPublicEDKey`, and point `SUFeedURL` at an `appcast.xml` you host.
 
