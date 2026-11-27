@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      body { font: 16px system-ui; padding: 40px; }
+      input { display: block; margin: 8px 0 16px; padding: 6px; width: 260px; }
+    </style>
+    <title>Test sign-in with SSO buttons</title>
+  </head>
+  <body>
+    <!-- a sign-in that also offers another account: choosing it leaves for the provider (here
+         welcome.html), and the password typed so far was never sent -->
+    <form id="signin" action="welcome.html" method="post">
+      <label>Email <input id="user" name="user" type="email" autocomplete="username" /></label>
+      <label>Password <input id="pass" name="pass" type="password" autocomplete="current-password" /></label>
+      <button type="submit">Sign in</button>
+      <button id="google" type="button">Continue with Google</button>
+    </form>
+    <script>
+      document.getElementById("google").addEventListener("click", () => {
+        location.href = "welcome.html";
+      });
+    </script>
+  </body>
+</html>

@@ -299,3 +299,44 @@ describe("maySignIn", () => {
     expect(maySignIn(el)).toBe(false);
   });
 });
+
+// Cases field detection still gets wrong, after the ones Kibo's extension covers. Marked `fails`
+// until the change that fixes them; that change moves them into the tables above.
+describe("not yet understood", () => {
+  it.fails.each([
+    [
+      // the buttons for signing in with another account say "Sign in", but the form creates one
+      "sign-up with SSO buttons",
+      `<form><input type="email"><input id="f" type="password"><button>Create account</button><button type="button">Sign in with Google</button></form>`,
+      "new-password",
+    ],
+    [
+      "Korean username label",
+      `<form><label for="f">아이디</label><input id="f"><input type="password"></form>`,
+      "login",
+    ],
+    [
+      // "email address" is the username here, not a postal address
+      "Korean email address label",
+      `<form><label for="f">이메일 주소</label><input id="f"><input type="password"></form>`,
+      "login",
+    ],
+    [
+      "Korean sign-in's username step",
+      `<form><label for="f">아이디</label><input id="f" name="x1"><button>로그인</button></form>`,
+      "login",
+    ],
+    [
+      "Korean sign-up",
+      `<form><input type="email"><input id="f" type="password"><button>회원가입</button></form>`,
+      "new-password",
+    ],
+    [
+      "Korean verification code",
+      `<form><label for="f">인증번호</label><input id="f" maxlength="6"></form>`,
+      "one-time-code",
+    ],
+  ])("reads a %s", (_, html, kind) => {
+    expect(fieldKind(field(html))).toBe(kind);
+  });
+});

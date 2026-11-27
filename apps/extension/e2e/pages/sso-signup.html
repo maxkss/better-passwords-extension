@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      body { font: 16px system-ui; padding: 40px; }
+      input { display: block; margin: 8px 0 16px; padding: 6px; width: 260px; }
+    </style>
+    <title>Test sign-up with SSO buttons</title>
+  </head>
+  <body>
+    <!-- a sign-up that also offers signing in with another account: those buttons say "Sign in",
+         but the form creates an account. Nothing else says so: no autocomplete, one password -->
+    <form id="signup">
+      <label>Email <input id="email" name="email" type="email" /></label>
+      <label>Password <input id="new" name="password" type="password" /></label>
+      <button type="submit">Create account</button>
+      <button type="button">Sign in with Google</button>
+      <button type="button">Sign in with Apple</button>
+    </form>
+  </body>
+</html>

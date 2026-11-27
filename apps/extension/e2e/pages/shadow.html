@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      body { font: 16px system-ui; padding: 40px; }
+      input { display: block; margin: 8px 0 16px; padding: 6px; width: 260px; }
+    </style>
+    <title>Test sign-in in a shadow root</title>
+  </head>
+  <body>
+    <!-- a sign-in inside a web component's shadow root; ?mode=closed makes the root closed, and
+         leaves its fields on window for the test to reach -->
+    <login-box></login-box>
+    <script>
+      const mode = new URLSearchParams(location.search).get("mode") === "closed" ? "closed" : "open";
+      customElements.define(
+        "login-box",
+        class extends HTMLElement {
+          connectedCallback() {
+            const root = this.attachShadow({ mode });
+            root.innerHTML = `
+              <style>input { display: block; margin: 8px 0 16px; padding: 6px; width: 260px; }</style>
+              <form id="signin">
+                <label>Email <input id="user" type="email" autocomplete="username" /></label>
+                <label>Password <input id="pass" type="password" autocomplete="current-password" /></label>
+                <button type="submit">Sign in</button>
+              </form>`;
+            window.shadowFields = { user: root.getElementById("user"), pass: root.getElementById("pass") };
+          }
+        },
+      );
+    </script>
+  </body>
+</html>
