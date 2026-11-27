@@ -7,9 +7,16 @@
   box-sizing: border-box;
 }
 
+/* The kit's sizes are an iPhone's; a toolbar popup on a Mac reads them as large. Drawn at 80%, the
+   whole layout keeps its proportions: 17 pt body text shows at about 13.6 px, a Mac popover's size,
+   and the 400 px column at 320 px. */
+html {
+  zoom: 0.8;
+}
+
 body {
   margin: 0;
-  width: 380px;
+  width: 400px;
   background: var(--grouped);
   color: var(--label);
   font: 400 17px / 22px var(--font);
