@@ -613,3 +613,17 @@ button.link:disabled {
   outline-offset: 1.5px;
   border-radius: 4px;
 }
+
+/* the example passphrase in Settings: whole, wrapped, in a typeface where every character is clear */
+.row.example-row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.row .title.example {
+  overflow-wrap: anywhere;
+  white-space: normal;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 12.5px;
+  letter-spacing: 0;
+}

@@ -128,55 +128,38 @@ test("an extension page inside a tab can't list or save the popup's recent passw
   await expectNoSave(page, helperSaves);
 });
 
-test("suggests a passphrase too when asked to, and fills it", async ({ context, siteUrl, popupUrl }) => {
-  const popup = await context.newPage();
-  await popup.goto(popupUrl);
-  await popup.evaluate(() => {
-    type Runtime = { runtime: { sendMessage(message: unknown): Promise<unknown> } };
-    const { chrome } = globalThis as unknown as { chrome: Runtime };
-    return chrome.runtime.sendMessage({ type: "set-settings", settings: { passphrases: true } });
-  });
-  await popup.close();
-
-  const page = await context.newPage();
-  await page.goto(`${siteUrl}/signup.html`);
-  const menu = await unlockedMenu(page);
-  await expect(menu.getByText("Passphrase", { exact: true })).toBeVisible();
-  // strong, without special characters, then the passphrase
-  const phrase = await revealed(menu, 2);
-  expect(phrase).toMatch(/^([A-Za-z]+[0-9]?-){4,}[A-Za-z]+[0-9]?$/);
-  await choose(menu, "Passphrase");
-  await expect(page.locator("#new")).toHaveValue(phrase);
-  await expect(page.locator("#confirm")).toHaveValue(phrase);
-});
-
-test("makes passphrases as set in the popup", async ({ context, siteUrl, popupUrl }) => {
+test("offers a passphrase made as set in the popup, in place of the password", async ({
+  context,
+  siteUrl,
+  popupUrl,
+}) => {
   const popup = await context.newPage();
   await popup.goto(popupUrl);
   await popup.getByLabel("Verification code").fill(PAIRING_CODE);
   await popup.getByRole("button", { name: "Settings" }).click();
-  // the passphrase's settings show once passphrases are on
+  // Apple's kind of password by default: no passphrase settings until passphrases are chosen
   await expect(popup.getByRole("combobox", { name: "Words", exact: true })).toHaveCount(0);
-  await popup.getByRole("switch", { name: /Passphrases too/ }).check();
+  await popup.getByRole("combobox", { name: "Style" }).selectOption({ label: "Passphrase" });
+  // the example shows what the settings make: six words, a capital and a digit by default
+  const example = popup.locator(".title.example");
+  await expect(example).toHaveText(/^(?=.*[A-Z])(?=.*[0-9])[A-Za-z0-9]+(-[A-Za-z0-9]+){5,}$/);
   await popup.getByRole("combobox", { name: "Words", exact: true }).selectOption("4");
   await popup.getByRole("combobox", { name: "Between words" }).selectOption({ label: "Period" });
   await popup.getByRole("switch", { name: /Capital letter/ }).uncheck();
   await popup.getByRole("switch", { name: /Number/ }).uncheck();
-  await expect(popup.getByRole("switch", { name: /Number/ })).not.toBeChecked();
-  // kept when the popup opens again
-  await popup.reload();
-  await popup.getByRole("button", { name: "Settings" }).click();
-  await expect(popup.getByRole("combobox", { name: "Words", exact: true })).toHaveValue("4");
-  await expect(popup.getByRole("combobox", { name: "Between words" })).toHaveValue(".");
+  await expect(example).toHaveText(/^[a-z-]+(\.[a-z-]+){3}$/);
+  await expect(popup.getByText("Example, weaker than usual")).toBeVisible();
   await popup.close();
 
   const page = await context.newPage();
   await page.goto(`${siteUrl}/signup.html`);
   const menu = await unlockedMenu(page);
-  // four plain words are weaker than usual: hidden whole, and a badge says why
-  const phrase = await revealed(menu, 2);
+  // the passphrase alone; four plain words are weaker than usual, and a badge says why
+  await expect(menu.getByText("Strong Password", { exact: true })).toHaveCount(0);
+  const phrase = await revealed(menu, 0);
   expect(phrase).toMatch(/^[a-z-]+(\.[a-z-]+){3}$/);
   await expect(menu.getByRole("button", { name: "Why this password is weaker" })).toBeVisible();
-  await choose(menu, "Passphrase");
+  await choose(menu, "Suggested Passphrase");
   await expect(page.locator("#new")).toHaveValue(phrase);
+  await expect(page.locator("#confirm")).toHaveValue(phrase);
 });

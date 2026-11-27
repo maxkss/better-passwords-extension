@@ -1,7 +1,14 @@
 import "./style.css";
 import { DISPLAY_NAME } from "@/src/config.ts";
 import { requestHideMyEmailConsent } from "@/src/icloud/consent.ts";
-import { type LoginsResult, type OneTimeCodesResult, type Settings, type Status, send } from "@/src/messages.ts";
+import {
+  type LoginsResult,
+  type OneTimeCodesResult,
+  type PasswordStyleSetting,
+  type Settings,
+  type Status,
+  send,
+} from "@/src/messages.ts";
 import { MAX_WORDS, MIN_WORDS } from "@/src/passwords/passphrase-options.ts";
 import { computerName, platform } from "@/src/platform.ts";
 import { applySystemAccent } from "@/src/ui/accent.ts";
@@ -602,6 +609,8 @@ async function showSettings(status: Status) {
   } catch (e) {
     return refresh(messageOf(e));
   }
+  // redraws the example passphrase; set once the section that shows it is made
+  let showExample = () => {};
   const option: Option = (key, label, detail, disabled = false) => {
     const toggle = h("input", {
       class: "switch",
@@ -617,8 +626,7 @@ async function showSettings(status: Status) {
           return;
         }
         await send({ type: "set-settings", settings: { [key]: toggle.checked } });
-        // the passphrase's own settings show only while passphrases are on
-        if (key === "passphrases") await showSettings(status);
+        if (key === "passphraseCapital" || key === "passphraseDigit") showExample();
       } catch (error) {
         toggle.checked = settings[key];
         await refresh(messageOf(error));
@@ -633,6 +641,8 @@ async function showSettings(status: Status) {
     });
   };
 
+  const newPasswords = newPasswordSection(settings, option, status);
+  showExample = newPasswords.showExample;
   show(
     toolbar(
       "Settings",
@@ -647,10 +657,9 @@ async function showSettings(status: Status) {
         option("inlineMenu", "When signing in", "Saved passwords"),
         option("oneTimeCodes", "Verification codes", "When a site asks for one"),
         option("generatePasswords", "When signing up", "Strong passwords and emails"),
-        option("passphrases", "Passphrases too", "Words that are easier to type"),
         option("hideMyEmail", "Hide My Email", "iCloud+ addresses for each site"),
       ),
-      settings.passphrases ? passphraseSection(settings, option) : null,
+      newPasswords.element,
       // Firefox's idle API never reports "locked", so the option would do nothing there
       import.meta.env.FIREFOX
         ? null
@@ -685,9 +694,46 @@ function picker(label: string, value: string, choices: [string, string][], save:
   return row({ as: "label", title: label, trailing: select });
 }
 
-/** How passphrases are made: how many words, what goes between them, a capital and a number. */
-function passphraseSection(settings: Settings, option: Option) {
+/** The kinds of password a sign-up can be offered, as Settings › Style names them. */
+const STYLES: [PasswordStyleSetting, string][] = [
+  ["apple", "Apple Default"],
+  ["passphrase", "Passphrase"],
+];
+
+/**
+ * What a sign-up is offered: Apple's kind of password, or a passphrase. For passphrases, how they're
+ * made (how many words, what goes between them, a capital and a number), under an example of
+ * what that makes, drawn again whenever one of them changes.
+ */
+function newPasswordSection(settings: Settings, option: Option, status: Status) {
   const save = (changes: Partial<Settings>) => send({ type: "set-settings", settings: changes });
+  const style = picker("Style", settings.passwordStyle, STYLES, async (value) => {
+    await save({ passwordStyle: value === "passphrase" ? "passphrase" : "apple" });
+    // the passphrase's settings show only while passphrases are chosen
+    await showSettings(status);
+  });
+  if (settings.passwordStyle !== "passphrase") {
+    return { element: h("section", {}, sectionTitle("New Passwords"), list(style)), showExample: () => {} };
+  }
+
+  const sample = h("span", { class: "title example" });
+  const example = row({ title: sample, subtitle: "Example", className: "example-row" });
+  const note = example.querySelector(".subtitle") as HTMLElement;
+  let asked = 0;
+  const showExample = async () => {
+    const ticket = ++asked;
+    try {
+      const { password, strength } = await send({ type: "sample-passphrase" });
+      // a slower answer to an earlier change mustn't replace this one
+      if (ticket !== asked) return;
+      sample.textContent = password;
+      note.textContent = strength === "strong" ? "Example" : "Example, weaker than usual";
+    } catch (error) {
+      if (ticket === asked) note.textContent = messageOf(error);
+    }
+  };
+  void showExample();
+
   const words = Array.from({ length: MAX_WORDS - MIN_WORDS + 1 }, (_, i): [string, string] => {
     const count = String(MIN_WORDS + i);
     return [count, count];
@@ -697,17 +743,26 @@ function passphraseSection(settings: Settings, option: Option) {
   const separators: [string, string][] = SEPARATORS.some(([value]) => value === separator)
     ? SEPARATORS
     : [...SEPARATORS, [separator, `“${separator}”`]];
-  return h(
+  const element = h(
     "section",
     {},
-    sectionTitle("Passphrases"),
+    sectionTitle("New Passwords"),
     list(
-      picker("Words", String(settings.passphraseWords), words, (value) => save({ passphraseWords: Number(value) })),
-      picker("Between words", separator, separators, (value) => save({ passphraseSeparator: value })),
+      style,
+      example,
+      picker("Words", String(settings.passphraseWords), words, async (value) => {
+        await save({ passphraseWords: Number(value) });
+        void showExample();
+      }),
+      picker("Between words", separator, separators, async (value) => {
+        await save({ passphraseSeparator: value });
+        void showExample();
+      }),
       option("passphraseCapital", "Capital letter", "In one word"),
       option("passphraseDigit", "Number", "After one word"),
     ),
   );
+  return { element, showExample: () => void showExample() };
 }
 
 /**
