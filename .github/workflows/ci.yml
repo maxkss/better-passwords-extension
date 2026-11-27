@@ -99,7 +99,8 @@ jobs:
 
   companion:
     name: Companion app (Swift)
-    runs-on: macos-15
+    # macOS 26: actool compiles the Icon Composer icon only on it, with Xcode 26
+    runs-on: macos-26
     defaults:
       run:
         working-directory: apps/companion

@@ -45,7 +45,8 @@ jobs:
   companion:
     name: Release the companion app
     # Ad hoc signed and not notarized unless the Developer ID secrets exist (see docs/release.md).
-    runs-on: macos-15
+    # macOS 26: actool compiles the Icon Composer icon only on it, with Xcode 26
+    runs-on: macos-26
     # a hang fails fast instead of holding the release queue for GitHub's 6-hour limit
     timeout-minutes: 60
     env:
