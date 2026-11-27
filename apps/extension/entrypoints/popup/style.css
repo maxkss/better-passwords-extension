@@ -10,6 +10,14 @@
   box-sizing: border-box;
 }
 
+/* A screen taller than the popup's 600 px (Settings) scrolls. With a mouse attached, macOS shows
+   scroll bars that take room, and Chrome sizes the window for the 320 px column alone, so the bar
+   covered the column's right edge and the layout looked off-centre. Without a bar, it still
+   scrolls with the wheel or trackpad. */
+html {
+  scrollbar-width: none;
+}
+
 body {
   margin: 0;
   width: 320px;
