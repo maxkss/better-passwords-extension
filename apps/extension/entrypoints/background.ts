@@ -923,9 +923,15 @@ export default defineBackground(() => {
             if (!(error instanceof PasswordRulesError)) throw error;
           }
         }
-        if ((await getSettings()).passphrases) {
+        const settings = await getSettings();
+        if (settings.passphrases) {
           try {
-            passwords.passphrase = generatePassphrase(rules);
+            passwords.passphrase = generatePassphrase(rules, {
+              words: settings.passphraseWords,
+              separator: settings.passphraseSeparator,
+              capital: settings.passphraseCapital,
+              digit: settings.passphraseDigit,
+            });
           } catch (error) {
             // too long for the site, or it won't take hyphens: the other suggestions stand
             if (!(error instanceof PasswordRulesError)) throw error;

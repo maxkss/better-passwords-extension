@@ -30,7 +30,7 @@ also, Apple's extension **doesn't** suggest passwords when signing up!
 ## Features
 
 - ✏️ login suggestions
-- 🔐 password generatino on sign-ups (or a passphrase, if you turn it on)
+- 🔐 password generatino on sign-ups (or a passphrase, with the words, separator, capital and number up to you)
 - ⏱️ fill OTP codes
 - ✨ NO MORE 6 DIGIT CODES!! *
 - 💾 asks to save/update new logins you type (obviously)

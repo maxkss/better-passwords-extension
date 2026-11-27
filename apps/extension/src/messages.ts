@@ -4,6 +4,7 @@
 import type { FieldKind } from "./autofill/fields.ts";
 import type { CompanionState, CompanionUpdate } from "./companion.ts";
 import type { FieldRules, PasswordStyle, Strength, Suggestion } from "./passwords/generate.ts";
+import { PASSPHRASE_DEFAULTS } from "./passwords/passphrase-options.ts";
 import type { Platform } from "./platform.ts";
 import type { SessionStatus } from "./session/session.ts";
 
@@ -105,6 +106,14 @@ export interface Settings {
   generatePasswords: boolean;
   /** Suggest a passphrase too (words, easier to type) along with the strong password. */
   passphrases: boolean;
+  /** How many words a passphrase has (see PassphraseOptions). */
+  passphraseWords: number;
+  /** What goes between a passphrase's words. */
+  passphraseSeparator: string;
+  /** Capitalize one of a passphrase's words. */
+  passphraseCapital: boolean;
+  /** Put a digit after one of a passphrase's words. */
+  passphraseDigit: boolean;
   /** Offer Hide My Email addresses on email fields (opt-in: uses icloud.com's web service). */
   hideMyEmail: boolean;
   /** Advertise Hide My Email in email fields until the user turns it on or dismisses it. */
@@ -124,6 +133,10 @@ export const DEFAULT_SETTINGS: Settings = {
   touchId: true,
   generatePasswords: true,
   passphrases: false,
+  passphraseWords: PASSPHRASE_DEFAULTS.words,
+  passphraseSeparator: PASSPHRASE_DEFAULTS.separator,
+  passphraseCapital: PASSPHRASE_DEFAULTS.capital,
+  passphraseDigit: PASSPHRASE_DEFAULTS.digit,
   hideMyEmail: false,
   hideMyEmailHint: true,
   companionEmailsHint: true,

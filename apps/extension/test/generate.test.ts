@@ -8,6 +8,7 @@ import {
   PasswordRulesError,
   parseRules,
 } from "../src/passwords/generate.ts";
+import { PASSPHRASE_DEFAULTS, passphraseOptions } from "../src/passwords/passphrase-options.ts";
 
 const repeat = (n: number, fn: () => void) => {
   for (let i = 0; i < n; i++) fn();
@@ -240,6 +241,56 @@ describe("generatePassphrase", () => {
       const phrase = generatePassphrase({ maxLength: 42 }).password;
       expect(phrase.length).toBeLessThanOrEqual(42);
     });
+  });
+
+  it.each([3, 4, 8, 10])("makes %i words", (count) => {
+    repeat(20, () => {
+      const phrase = generatePassphrase({}, { words: count, separator: "." }).password;
+      // hyphenated words (t-shirt) stay whole: count by the separator
+      expect(phrase.split(".")).toHaveLength(count);
+    });
+  });
+
+  it.each(["", " ", "_", "+*"])("puts %j between the words", (separator) => {
+    repeat(20, () => {
+      const { password: phrase } = generatePassphrase({}, { words: 4, separator, capital: false, digit: false });
+      if (separator) expect(phrase.split(separator)).toHaveLength(4);
+      else expect(phrase).toMatch(/^[a-z-]+$/);
+    });
+  });
+
+  it("leaves out the capital and the digit when asked", () => {
+    repeat(50, () => {
+      const { password: phrase } = generatePassphrase({}, { capital: false, digit: false });
+      expect(phrase).toMatch(/^[a-z-]+$/);
+    });
+  });
+
+  it("is weaker than usual with fewer words, and says so", () => {
+    const weak = generatePassphrase({}, { words: 3, capital: false, digit: false });
+    expect(weak.strength).toBe("weak");
+    expect(weak.limit).toMatch(/More words/);
+    expect(generatePassphrase({}, { words: 4 }).strength).toBe("fair");
+    expect(generatePassphrase({}, { words: 5 }).strength).toBe("strong");
+    expect(generatePassphrase({}, { words: 6, capital: false, digit: false }).strength).toBe("strong");
+  });
+
+  it("adds a capital and a digit a site requires, even when turned off", () => {
+    const rules: FieldRules = { passwordRules: "required: upper; required: digit; allowed: lower, [-]" };
+    repeat(50, () => {
+      const phrase = generatePassphrase(rules, { capital: false, digit: false }).password;
+      expect(phrase).toMatch(/[A-Z]/);
+      expect(phrase).toMatch(/[0-9]/);
+    });
+  });
+
+  it.each([
+    ["too few words", { words: 2 }],
+    ["too many words", { words: 11 }],
+    ["a long separator", { separator: "----" }],
+    ["a control character", { separator: "\n" }],
+  ])("falls back to the defaults for %s", (_, options) => {
+    expect(passphraseOptions(options)).toEqual(PASSPHRASE_DEFAULTS);
   });
 
   it.each<[string, FieldRules]>([
