@@ -14,6 +14,7 @@
 // fit gets none rather than a weaker one.
 
 import WORDS from "./eff-large-wordlist.json";
+import { MIN_WORDS, type PassphraseOptions, passphraseOptions } from "./passphrase-options.ts";
 
 export type PasswordStyle = "strong" | "alphanumeric";
 
@@ -64,6 +65,8 @@ const READABLE = classTable("abcdefghijkmnpqrstuvwxyz", "ABCDEFGHJKLMNPQRSTUVWXY
 
 const DEFAULT_LENGTH = 20;
 const MAX_LENGTH = 64;
+/** Ten long words with their separators fit; a site that wants fewer says so. */
+const MAX_PASSPHRASE_LENGTH = 128;
 /** Longer `passwordrules` are ignored: no real site needs that much. */
 const MAX_RULES_LENGTH = 4096;
 /** How many fields' `passwordrules` are combined, at most. */
@@ -114,12 +117,12 @@ function unique(chars: string): string {
  * Parses the subset of Apple's password rules language that matters for generating. `classes`
  * says which characters `lower`, `digit` and the like stand for.
  */
-export function parseRules(rules: FieldRules, classes = FULL): ParsedRules {
-  const parsed: ParsedRules = { minLength: 0, maxLength: MAX_LENGTH, required: [], allowed: "" };
+export function parseRules(rules: FieldRules, classes = FULL, maxLength = MAX_LENGTH): ParsedRules {
+  const parsed: ParsedRules = { minLength: 0, maxLength, required: [], allowed: "" };
   // several fields' rules: a password must meet every one of them
   let restricted = false;
   for (const text of [rules.passwordRules ?? []].flat().slice(0, MAX_RULE_SETS)) {
-    const one = parseOne(text, classes);
+    const one = parseOne(text, classes, maxLength);
     parsed.minLength = Math.max(parsed.minLength, one.minLength);
     parsed.maxLength = Math.min(parsed.maxLength, one.maxLength);
     parsed.required.push(...one.required);
@@ -139,8 +142,8 @@ export function parseRules(rules: FieldRules, classes = FULL): ParsedRules {
 }
 
 /** One field's `passwordrules`. */
-function parseOne(text: string, classes: Record<string, string>): ParsedRules {
-  const parsed: ParsedRules = { minLength: 0, maxLength: MAX_LENGTH, required: [], allowed: "" };
+function parseOne(text: string, classes: Record<string, string>, maxLength: number): ParsedRules {
+  const parsed: ParsedRules = { minLength: 0, maxLength, required: [], allowed: "" };
   for (const part of text.length > MAX_RULES_LENGTH ? [] : text.split(";")) {
     const separator = part.indexOf(":");
     if (separator < 0) continue;
@@ -332,30 +335,70 @@ export function generatePassword(
   throw new PasswordRulesError("contradict");
 }
 
-/** Words in a passphrase: about 77 bits from the words, more from the capital and the digit. */
-const PASSPHRASE_WORDS = 6;
-/** Fewer words when a site's length limit asks for it: still about 72 bits, still strong. */
-const SHORT_PASSPHRASE_WORDS = 5;
+const WORD_COUNT = BigInt(WORDS.length);
+
+/** How many passphrases these options can make: the words, which one is capitalized, which digit where. */
+function passphraseSpace({ words, capital, digit }: PassphraseOptions): bigint {
+  const count = BigInt(words);
+  return WORD_COUNT ** count * (capital ? count : 1n) * (digit ? 10n * count : 1n);
+}
+
+function drawPassphrase({ words: count, separator, capital, digit }: PassphraseOptions, random: RandomIndex): string {
+  const words = Array.from({ length: count }, () => WORDS[random(WORDS.length)] ?? "");
+  if (capital) {
+    const at = random(count);
+    words[at] = (words[at]?.charAt(0).toUpperCase() ?? "") + (words[at]?.slice(1) ?? "");
+  }
+  if (digit) words[random(count)] += String(random(10));
+  return words.join(separator);
+}
 
 /**
- * Words from EFF's large list (7,776 words, about 12.9 bits each), joined by hyphens, with one
- * word capitalized and one digit after a word: the capital and digit most sites ask for. Throws
- * `PasswordRulesError` when the site's rules don't take one (too long, no hyphens, ...).
+ * A passphrase made as the user set it: words from EFF's large list (7,776 words, about 12.9 bits
+ * each) with what they chose between them, and a capital and a digit if they asked for those.
+ *
+ * The site's rules come first. A site that requires a capital or a digit gets one even when the
+ * user turned it off, and one whose length limit the words don't fit gets one word fewer. When
+ * the passphrase is weaker than usual, by the user's choice or the site's limit, its strength says
+ * so. Throws `PasswordRulesError` when the site won't take a passphrase at all (no room even for
+ * fewer words, a separator it doesn't allow, ...).
  */
-export function generatePassphrase(fieldRules: FieldRules = {}, random: RandomIndex = cryptoRandomIndex): Suggestion {
-  const rules = parseRules(fieldRules);
-  for (const count of [PASSPHRASE_WORDS, SHORT_PASSPHRASE_WORDS]) {
-    for (let attempt = 0; attempt < ATTEMPTS; attempt++) {
-      const words = Array.from({ length: count }, () => WORDS[random(WORDS.length)] ?? "");
-      const capital = random(count);
-      words[capital] = (words[capital]?.charAt(0).toUpperCase() ?? "") + (words[capital]?.slice(1) ?? "");
-      const withDigit = random(count);
-      words[withDigit] += String(random(10));
-      const passphrase = words.join("-");
-      if (satisfies(passphrase, rules)) return { password: passphrase, strength: "strong" };
-      // too long: another draw may be shorter, then fewer words; no draw meets any other rule
-      if (passphrase.length <= rules.maxLength) throw new PasswordRulesError("contradict");
+export function generatePassphrase(
+  fieldRules: FieldRules = {},
+  options: Partial<PassphraseOptions> = {},
+  random: RandomIndex = cryptoRandomIndex,
+): Suggestion {
+  const chosen = passphraseOptions(options);
+  // only the site's own limit: the generator's cap is for random characters, not words
+  const rules = parseRules(fieldRules, FULL, MAX_PASSPHRASE_LENGTH);
+  // the user's choice first; then, for a site that requires them, with a capital and a digit
+  const variants = [chosen];
+  if (!chosen.capital || !chosen.digit) variants.push({ ...chosen, capital: true, digit: true });
+  for (const variant of variants) {
+    const counts = variant.words > MIN_WORDS ? [variant.words, variant.words - 1] : [variant.words];
+    tries: for (const words of counts) {
+      const made = { ...variant, words };
+      for (let attempt = 0; attempt < ATTEMPTS; attempt++) {
+        const passphrase = drawPassphrase(made, random);
+        if (satisfies(passphrase, rules)) return passphraseSuggestion(passphrase, made, words < chosen.words, rules);
+        // too long: another draw may be shorter, then fewer words; no draw meets any other rule
+        if (passphrase.length <= rules.maxLength) break tries;
+      }
     }
   }
   throw new PasswordRulesError("contradict");
+}
+
+function passphraseSuggestion(
+  password: string,
+  made: PassphraseOptions,
+  shortened: boolean,
+  rules: ParsedRules,
+): Suggestion {
+  const strength = strengthOf(passphraseSpace(made));
+  if (strength === "strong") return { password, strength };
+  const limit = shortened
+    ? `This site limits passwords to ${rules.maxLength} characters.`
+    : "More words, a capital letter or a number would make it stronger.";
+  return { password, strength, limit };
 }

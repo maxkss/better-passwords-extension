@@ -389,3 +389,34 @@ test("suggests a passphrase too when asked to, and fills it", async ({ context, 
   await expect(page.locator("#new")).toHaveValue(phrase);
   await expect(page.locator("#confirm")).toHaveValue(phrase);
 });
+
+test("makes passphrases as set in the popup", async ({ context, siteUrl, popupUrl }) => {
+  const popup = await context.newPage();
+  await popup.goto(popupUrl);
+  await popup.getByLabel("Verification code").fill(PAIRING_CODE);
+  await popup.getByRole("button", { name: "Settings" }).click();
+  // the passphrase's settings show once passphrases are on
+  await expect(popup.getByRole("combobox", { name: "Words", exact: true })).toHaveCount(0);
+  await popup.getByRole("switch", { name: /Passphrases too/ }).check();
+  await popup.getByRole("combobox", { name: "Words", exact: true }).selectOption("4");
+  await popup.getByRole("combobox", { name: "Between words" }).selectOption({ label: "Period" });
+  await popup.getByRole("switch", { name: /Capital letter/ }).uncheck();
+  await popup.getByRole("switch", { name: /Number/ }).uncheck();
+  await expect(popup.getByRole("switch", { name: /Number/ })).not.toBeChecked();
+  // kept when the popup opens again
+  await popup.reload();
+  await popup.getByRole("button", { name: "Settings" }).click();
+  await expect(popup.getByRole("combobox", { name: "Words", exact: true })).toHaveValue("4");
+  await expect(popup.getByRole("combobox", { name: "Between words" })).toHaveValue(".");
+  await popup.close();
+
+  const page = await context.newPage();
+  await page.goto(`${siteUrl}/signup.html`);
+  const menu = await unlockedMenu(page);
+  // four plain words are weaker than usual: hidden whole, and a badge says why
+  const phrase = await revealed(menu, 2);
+  expect(phrase).toMatch(/^[a-z-]+(\.[a-z-]+){3}$/);
+  await expect(menu.getByRole("button", { name: "Why this password is weaker" })).toBeVisible();
+  await choose(menu, "Passphrase");
+  await expect(page.locator("#new")).toHaveValue(phrase);
+});
